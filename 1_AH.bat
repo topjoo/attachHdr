@@ -37,16 +37,16 @@ ah.exe --board JF200S-RevA   --model STM32F302K8U6 --cinfo blake224  --input ah.
 @REM
 @REM=== Convert Intel Hex to Bin ======
 @REM ah.exe -i micom_jf8.hex  -o MCU_JF8.bin  --intel
-ah.exe -i micom_SL.hex   -o MCU_SL_max.bin   -L --length a0000
-ah.exe -i micom_SL.hex   -o MCU_SL_640kB.bin   -L --length 640kB
+ah.exe -i hex/micom_SL.hex   -o MCU_SL_max.bin   -L --length a0000
+ah.exe -i hex/micom_SL.hex   -o MCU_SL_640kB.bin   -L --length 640kB
 @REM ah.exe -i koino.hex      -o MCU_koino.bin   -L --verbose 1
-ah.exe -i micom_917.hex   -o MCU_917ff_max.bin   --intel --length a0000  --verbose 1 
-ah.exe -i micom_917.hex   -o MCU_917ab_max.bin   --intel --length a0000  --padbyte ab 
+ah.exe -i hex/micom_917.hex   -o MCU_917ff_max.bin   --intel --length a0000  --verbose 1 
+ah.exe -i hex/micom_917.hex   -o MCU_917ab_max.bin   --intel --length a0000  --padbyte ab 
 @REM=== Convert motorolA Hex to Bin ======
-ah.exe -i mahind.hex     -o MCU_mahind.bin   --motorola   
-ah.exe -i romp.hex       -o MCU_romp_ab_max.bin  --motorola --length 10000 --padbyte ab   
-ah.exe -i romp.hex       -o MCU_romp_max.bin     --motorola --length 10000 --verbose 1
-ah.exe -i romp.hex       -o MCU_romp_cc_max_ALL.bin   --motorola --length 10000  --padbyte 0xcc --allpadarea
+ah.exe -i hex/mahind.hex     -o MCU_mahind.bin   --motorola   
+ah.exe -i hex/romp.hex       -o MCU_romp_ab_max.bin  --motorola --length 10000 --padbyte ab   
+ah.exe -i hex/romp.hex       -o MCU_romp_max.bin     --motorola --length 10000 --verbose 1
+ah.exe -i hex/romp.hex       -o MCU_romp_cc_max_ALL.bin   --motorola --length 10000  --padbyte 0xcc --allpadarea
 @REM
 @REM
 @REM== ah.exe -i micom_mnav_um_ExAmp-navi_9_2_2.hex      -o um_avn_ext_L7_60th.bin_INN  --intel --length a0000  --padbyte FF 
@@ -57,23 +57,23 @@ ah.exe -i romp.hex       -o MCU_romp_cc_max_ALL.bin   --motorola --length 10000 
 @REM 
 @REM
 @REM 
-ah.exe -i booter_standalone.rec  --output booter_standalone_len.bin --motorola --length cac00 --zeroforced 
-ah.exe -i booter_standalone.rec  --output booter_standalone_all.bin --motorola --length cac00 --zeroforced --padbyte ee 
-ah.exe -i booter_standalone.rec  --output booter_standalone_ee.bin --motorola --length cac00 --zeroforced --padbyte ee --allpadarea 
+ah.exe -i hex/booter_standalone.rec  --output booter_standalone_len.bin --motorola --length cac00 --zeroforced 
+ah.exe -i hex/booter_standalone.rec  --output booter_standalone_all.bin --motorola --length cac00 --zeroforced --padbyte ee 
+ah.exe -i hex/booter_standalone.rec  --output booter_standalone_ee.bin --motorola --length cac00 --zeroforced --padbyte ee --allpadarea 
 
-ah.exe -i Aardvark_2_14_03.s19   --output Aardvark_2_14_03_ZERO.bin  --motorola --zeroforced 
-ah.exe -i Aardvark_2_14_03.s19   --output Aardvark_2_14_03_length.bin  --motorola --zeroforced  --length 30000
-ah.exe -i Aardvark_2_14_03.s19   --output Aardvark_2_14_03_192kb.bin  --motorola --zeroforced  --length 192kB
+ah.exe -i hex/Aardvark_2_14_03.s19   --output Aardvark_2_14_03_ZERO.bin  --motorola --zeroforced 
+ah.exe -i hex/Aardvark_2_14_03.s19   --output Aardvark_2_14_03_length.bin  --motorola --zeroforced  --length 30000
+ah.exe -i hex/Aardvark_2_14_03.s19   --output Aardvark_2_14_03_192kb.bin  --motorola --zeroforced  --length 192kB
 
-ah.exe -i LAN3320KT_NaviBox_13E-PA19A.hex         -o LAN3320KT_NaviBox_13E.bin  --motorola 
-ah.exe -i PIC18LF46K22.hex    -o PIC18LF46K22.bin --intel 
-ah.exe -i PIC18LF46K22.hex    -o PIC18LF46K22_ZERO.bin --intel --zeroforced
-ah.exe -i PIC24FJ256GA106.X.production.hex -o PIC24FJ256GA106.bin --intel 
-ah.exe -i PLL32MHZ.hex  -o PLL32MHZ.bin  --motorola 
-ah.exe -i STM32.hex  -o STM32.bin --intel 
-ah.exe -i STM32.hex  -o STM32_ZERO.bin --intel --zeroforced
-ah.exe -i Aardvark_2_04_DR_LIB.s19 -o Aardvark_2_04_DR_LIB.bin   --motorola  --zeroforced
-ah.exe -i Aardvark_2_04_DR_LIB.s19 -o Aardvark_2_04_DR_LIB_145KB.bin   --motorola  --zeroforced --length 145kB --padbyte dd --allpadarea
+ah.exe -i hex/LAN3320KT_NaviBox_13E-PA19A.hex         -o LAN3320KT_NaviBox_13E.bin  --motorola 
+ah.exe -i hex/PIC18LF46K22.hex    -o PIC18LF46K22.bin --intel 
+ah.exe -i hex/PIC18LF46K22.hex    -o PIC18LF46K22_ZERO.bin --intel --zeroforced
+ah.exe -i hex/PIC24FJ256GA106.X.production.hex -o PIC24FJ256GA106.bin --intel 
+ah.exe -i hex/PLL32MHZ.hex  -o PLL32MHZ.bin  --motorola 
+ah.exe -i hex/STM32.hex  -o STM32.bin --intel 
+ah.exe -i hex/STM32.hex  -o STM32_ZERO.bin --intel --zeroforced
+ah.exe -i hex/Aardvark_2_04_DR_LIB.s19 -o Aardvark_2_04_DR_LIB.bin   --motorola  --zeroforced
+ah.exe -i hex/Aardvark_2_04_DR_LIB.s19 -o Aardvark_2_04_DR_LIB_145KB.bin   --motorola  --zeroforced --length 145kB --padbyte dd --allpadarea
 
 @REM 
 @REM 
