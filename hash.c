@@ -1,5 +1,28 @@
 
+/************************************************************************************
+ * @file    : hash.c 
+ * @brief   : Message Digest, Hash from public domain (
+ *     - 2008/12/05 : MD2/MD4/MD5/MD6, SHA1,SHA2 224/256/384/512,
+ *     -              SHA3 KECCAK 224/256/384/512 
+ *     - 2008/12/05 : Blake224/256/384/512, 
+ *     - 2008/12/05 : RIPEMD128/RIPEMD160, etc...
+ *           
+ *           
+ * @version : 2.0
+ * @date    : 2014/06/30
+ * @author  : Public author 
+ *            tp.joo@daum.net
+ ************************************************************************************/
+
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <math.h>  
+#include <assert.h>	/* assert() */
+#include <unistd.h>
+#include <memory.h> 
+
 #include "common.h"
 #include "feature.h"
 

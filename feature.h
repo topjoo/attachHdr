@@ -1,6 +1,17 @@
 
-#ifndef _FEATURE_H__
-#define _FEATURE_H__
+#ifndef __FEATURE_H__
+#define __FEATURE_H__
+
+/***********************************************************************************
+ * @file    : feature.h
+ * @brief   : Features define
+ *     - 2008/12/05 : feature.h file is created.
+ *           
+ *           
+ * @version : 2.0
+ * @date    : 2014/06/30
+ * @author  : Yoon-Hwan Joo (tp.joo@daum.net or toppy_joo@naver.com) 
+ ************************************************************************************/
 
 #include <stdio.h>
 
@@ -83,7 +94,7 @@ unsigned char *data_buf = NULL;
 /* ------------------------------------------------------------------------ */
 
 
-#endif //_FEATURE_H__
+#endif //__FEATURE_H__
 
 
 

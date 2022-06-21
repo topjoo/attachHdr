@@ -1,14 +1,16 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-/* ========================================================
- * common.h
- *
- * Yoon-Hwan Joo (tp.joo@daum.net or toppy_joo@naver.com) 
- *  - 2008/12/05 : Attached Header, common.h is created.
- * TOP.JOO
- * ========================================================
- */
+/***********************************************************************************
+ * @file    : common.h
+ * @brief   : keyword define
+ *     - 2008/12/05 : Attached Header, common.h is created.
+ *           
+ *           
+ * @version : 2.0
+ * @date    : 2014/06/30
+ * @author  : Yoon-Hwan Joo (tp.joo@daum.net or toppy_joo@naver.com) 
+ ************************************************************************************/
 
 
 #include <stdio.h>

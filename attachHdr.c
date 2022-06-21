@@ -1,7 +1,8 @@
-/* ========================================================
- * AttachHdr.exe Tool
- *
- * Yoon-Hwan Joo (tp.joo@daum.net or toppy_joo@naver.com) 
+
+/************************************************************************************
+ * @file  : attachHdr.c
+ *          AttachHdr.exe Tool
+ * @brief : 
  *  - 2008/12/05 : Attached Header Created.
  *  - 2009/10/09 : Added CRC Generator
  *  - 2010/03/04 : Added Line Counter
@@ -99,9 +100,14 @@
  *    0.00      0.00     0.00            19     0.00     0.00  sha1_starts  
  *    0.00      0.00     0.00             1     0.00     0.00  help_brief
  *
- * TOP.JOO
- * ========================================================
- */
+ *			 
+ *
+ * @version : 2.0
+ * @date	: 2021/10/07
+ * @author	: Yoon-Hwan Joo (tp.joo@daum.net or toppy_joo@naver.com) 
+ *
+ ************************************************************************************/
+
 
 
 #include <stdio.h>
@@ -123,82 +129,9 @@
 #include "common.h" 
 #include "feature.h"
 #include "hash.c"
+#include "attachHdr.h"
 
-
-
-
-#if 0
-#define SNDERR(...) snd_lib_error(__FILE__, __LINE__, __FUNCTION__, 0, __VA_ARGS__) /**< Shows a sound error message. */
-#define SNDERR(args...) snd_lib_error(__FILE__, __LINE__, __FUNCTION__, 0, ##args) /**< Shows a sound error message. */
-#endif
-
-
-
-char Attversion[] = "2.23"; /* ver 2.21 : 2021.06.25 : Version up */
-char EmailText[]  = "tp.joo@daum.net";
-
-
-enum {
-	MOT_HEX_S0 = 0x0001,
-	MOT_HEX_S1 = 0x0002,
-	MOT_HEX_S2 = 0x0004,
-	MOT_HEX_S3 = 0x0008,
-	MOT_HEX_S4 = 0x0010,
-	MOT_HEX_S5 = 0x0020,
-	MOT_HEX_S6 = 0x0040,
-	MOT_HEX_S7 = 0x0080,
-	MOT_HEX_S8 = 0x0100,
-	MOT_HEX_S9 = 0x0200
-};
-
-
-#define HDR_CRC16 				0x0015
-#define HDR_KSC_CRC16 			0x0016
-#define HDR_CRC16CCITT 			0x0017
-#define HDR_ADLER32 			0x0018 /// zlib
-#define HDR_CRC32 				0x0019
-#define HDR_CRC64 				0x001a
-#define HDR_CRC64_ISC 			0x001b
-#define HDR_JOAAT 				0x001c // 2020.07.22
-
-#define HDR_SHA1 				0x0020 // 2020.06.10
-#define HDR_SHA224 				0x0021
-#define HDR_SHA256 				0x0022
-#define HDR_SHA384 				0x0023
-#define HDR_SHA512 				0x0024
-#define HDR_SHA3_224 			0x0025
-#define HDR_SHA3_256 			0x0026
-#define HDR_SHA3_384 			0x0027
-#define HDR_SHA3_512 			0x0028
-#define HDR_SHAKE128 			0x0029
-#define HDR_SHAKE256 			0x002a
-
-#define HDR_MD2 				0x0030
-#define HDR_MD4 				0x0031
-#define HDR_MD5 				0x0032
-#define HDR_MD6 				0x0033
-
-#define HDR_BLAKE224 			0x0035
-#define HDR_BLAKE256 			0x0036
-#define HDR_BLAKE384 			0x0037
-#define HDR_BLAKE512 			0x0038
-
-
-#define HDR_RMD128 				0x0040
-#define HDR_RMD160 				0x0041
-#define HDR_RMD320 				0x0042
-
-#define HDR_CRC_UNKNOWN 			0xffff
-
-
-
-#define LOG_ERR(format, ...) 		fprintf(stderr, format "\n", ## __VA_ARGS__)
-#define LOG_INF(format, ...)  		fprintf(stdout, format "\n", ## __VA_ARGS__)
-#define LOG_V(format, ...) 			fprintf(stderr, format, ## __VA_ARGS__)
-
-
-#define COMMA_BUF_SIZE  			256 /// 2014.07.23
-
+#include "mjd.c"
 
 
 
@@ -206,25 +139,6 @@ int verbose = 0;
 int g_iUpper = -1;
 
 
-
-
-
-
-
-
-
-
-/// --float / double to hex --------------------------
-typedef union {
-	float		   flt_val;		
-	unsigned char  flt_bin[sizeof(float)]; 
-} __float_hex_union; /// = { 0.866f };	 
-
-typedef union { 	  
-	double	       dbl_val;	   
-	unsigned char  dbl_bin[sizeof(double)];    
-} __double_hex_union;
-/// --float / double to hex --------------------------
 
 
 
@@ -415,151 +329,6 @@ typedef struct _RGBTRIPLE			 // 24비트 비트맵 이미지의 픽셀 구조체
 #define PIXEL_ALIGN  4    // 픽셀 데이터 가로 한 줄은 4의 배수 크기로 저장됨
 
 #endif /// CONVERT_BMP2C
-
-
-
-#if MODIFIED_JULIAN_DATE /// 2014.07.04
-////////////////////////////////////////////
-/// Modified Julian Date
-/// 2013.09.14 by top.joo
-////////////////////////////////////////////
-
-/* ------------------------------------------------- */
-/* --  2013.09.14 : KBS EWS (Emergency Warning Service) --- */
-/* ------------------------------------------------- */
-/* --- Modified Julian Date ------ */
-typedef struct {
-	int  m_year;
-	int  m_month;
-	int  m_day;
-	int  m_hour;
-	int  m_mins;
-	int  m_secs;
-	int  m_millis;
-} mjd_timestamp;
-
-#define TDMB_REFER_MJD_VALUE  			(15020)  /* Reference TDMB : 1900.1.1 (15020.0) */
-
-
-/// ---------- Modified JD Examles ----------------------
-/// *** -> 50000.000000  ---> [ 1995, 10, 10, 0, 0, 0 0 ] 
-/// *** -> 56551.338982  ---> [ 2013, 9, 16, 8, 8, 8 6 ]  
-/// *** -> 00000.000000  ---> [ 1858, 11, 17, 0, 0, 0 0 ] 
-/// *** -> 40000.000000  ---> [ 1968, 5, 24, 0, 0, 0 0 ]
-/// *** -> 47892.000000  ---> [ 1990, 1, 1, 0, 0, 0 0 ]  
-/// *** -> 48000.000000  ---> [ 1990, 4, 19, 0, 0, 0 0 ]  
-/// *** -> 15020.000000  ---> [ 1900, 1, 1, 0, 0, 0 0 ]  
-/// *** -> 15021.000000  ---> [ 1900, 1, 2, 0, 0, 0 0 ]  
-/// --------------------------------------------------
-
-#define MJD_PARAM 			(2400000.5)
-
-/// New function at 2013.09.14
-/// ---- 2013.09.14
-/// ---- Modified Julian Date ------
-double Convert2MJD(mjd_timestamp YYMMDD_Time) 
-{
-	int y = YYMMDD_Time.m_year;
-	int m = YYMMDD_Time.m_month;
-	double d = (double) YYMMDD_Time.m_day;
-
-	d = d + ((YYMMDD_Time.m_hour / 24.0) +
-	         (YYMMDD_Time.m_mins / 1440.0) +
-	         (YYMMDD_Time.m_secs / 86400.0) +
-	         (YYMMDD_Time.m_millis / 86400000.0));
-	
-	if (m == 1 || m == 2) {
-		y--;
-		m = m + 12;
-	}
-
-	double a = floor(y / 100.0);
-	double b = 2 - a + floor(a / 4.0);
-
-	return (floor(365.25 * (y + 4716.0)) +
-			floor(30.6001 * (m + 1)) + d + b - 1524.5) 
-			- 2400000.5;  // for Julian Day omit the 2400000.5 term
-}
-
-
-
-/// ----------------------------------------------------------------------
-/// Converts an Modified Julian Day Number (double) to an integer array representing
-/// a timestamp (year,month,day,hours,mins,secs,millis).
-/// ----------------------------------------------------------------------
-mjd_timestamp Convert2Timestamp(double mjd) 
-{
-	mjd_timestamp ymd_hms;
-	int a, b, c, d, e, z;
-
-	/* if a JDN is passed as argument, omit the 2400000.5 term */
-	double jd = mjd + 2400000.5 + 0.5;  
-	double f, x;
-
-	z = (int)floor(jd);
-	f = jd - z;
-
-	if (z >= 2299161) 
-	{
-		int alpha = (int)floor((z - 1867216.25) / 36524.25);
-		a = z + 1 + alpha - (int)floor(alpha / 4.0);
-	} 
-	else 
-	{
-		a = z;
-	}
-
-	b = a + 1524;
-	c = (int) floor((b - 122.1) / 365.25);
-	d = (int) floor(365.25 * c);
-	e = (int) floor((b - d) / 30.6001);
-
-	/// Day --
-	ymd_hms.m_day   = b - d - (int) floor(30.6001 * e);
-
-	/// Month --
-	ymd_hms.m_month = (e < 14) ? (e - 1) : (e - 13);
-
-	/// Year --
-	ymd_hms.m_year  = (ymd_hms.m_month > 2) ? (c - 4716) : (c - 4715);
-
-
-	/// Hour --
-	f = f * 24.0;
-	x = floor(f);
-	ymd_hms.m_hour = (int)x;
-	f = f - x;
-
-	/// Minutes --
-	f = f * 60.0;
-	x = floor(f);
-	ymd_hms.m_mins = (int)x;
-	f = f - x;
-
-	/// seconds --
-	f = f * 60.0;
-	x = floor(f);
-	ymd_hms.m_secs = (int)x;
-	f = f - x;
-
-	/// milli-sec ---
-	f = f * 1000.0;
-	x = floor(f);
-	ymd_hms.m_millis= (int)x;
-	f = f - x;
-
-    return ymd_hms;
-}
-
-
-#define RADIX 			10 /// Decial,  2:binary
-
-#endif /// MODIFIED_JULIAN_DATE
-/////////////////////////////////////////////////////////////////
-
-
-
-
 
 
 
