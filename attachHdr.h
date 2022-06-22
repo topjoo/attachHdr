@@ -1,4 +1,7 @@
 
+#ifndef __ATTACH_HDR_H__
+#define __ATTACH_HDR_H__
+
 /************************************************************************************
  * @file  : attachHdr.h
  * @brief : 
@@ -37,7 +40,7 @@
 
 
 
-char Attversion[] = "2.23"; /* ver 2.21 : 2021.06.25 : Version up */
+char Attversion[] = "3.1.0"; /* ver 3.1.9 : 2022.06.22 : Version up because of function modulization */
 char EmailText[]  = "tp.joo@daum.net";
 
 
@@ -312,5 +315,84 @@ typedef struct _RGBTRIPLE			 // 24비트 비트맵 이미지의 픽셀 구조체
 
 
 
+
+
+#define ONE_KILO_BYTE 			1024.0
+#define ONE_MEGA_BYTE 			(1024*1024)
+#define HALF_MEGA_BYTE 			(512*1024)
+#define MAX_BUF_SIZ 			(50*(ONE_MEGA_BYTE)-HALF_MEGA_BYTE) /* NK.NB0 , EBOOT.NB0 size 변경시 수정후 building */
+
+#define RD_BUF_SIZ 				1024*10
+
+#define MULTI_IN_FILES_CNT 			(4096)
+#define LENGTH_OF_FILENAME			16 /* 16*16 -> 256 */
+#define MAX_CHARS 					16
+#define MAX_VERSION_LEN 			16 // 2017.12.12
+#define MAX_CRC_LEN_CODE 			16 // 2017.11.21
+#define MAX_HASH_CODE 				128 // 2017.11.21
+
+#define MAX_FILENAME_LEN 			256
+
+#define SPACE_FILL1 		'\0'
+#define SPACE_FILL2 		'\0' //0xFF
+#define SPACE_FILL3 		'\0'
+#define SPACE_FILL4 		'\0'
+
+#define DUMMY_FILL 			"TOPJOOhdr"
+#define DUMMY_FILL_LEN 		9
+
+#define TRUE 		1
+#define FALSE 		0
+
+
+#define CHECK_BIT_IN 		0x01
+#define CHECK_BIT_OUT 		0x02
+
+
+#define ATT_VERSION 		0x0001
+#define ATT_DATEorCRC 		0x0002
+#define ATT_MODEL 			0x0004
+#define ATT_BOARD 			0x0008
+
+
+#define MONTH_LEN 	12
+typedef struct {
+	unsigned char 	mon[3];
+	unsigned char   amon;	
+} _month_table_ ;
+
+_month_table_ month_table[MONTH_LEN] =
+{
+	"Jan", 'A',
+	"Feb", 'B',
+	"Mar", 'C',
+	"Apr", 'D',
+	"May", 'E',
+	"Jun", 'F',
+	"Jul", 'G',
+	"Aug", 'H',
+	"Sep", 'I',
+	"Oct", 'J',
+	"Nov", 'K',
+	"Dec", 'L',
+};
+
+
+
+#define ENDIAN_LITTLE 		1
+#define ENDIAN_BIG 			2
+
+enum {
+	ASTERISK_UNKNOWN = -1,
+	ASTERISK_INIT = 0,
+	ASTERISK_STEP1 = 1,
+	ASTERISK_FOUND = 2,
+
+	ASTERISK_MAX = 9
+};
+
+
+
+#endif //__ATTACH_HDR_H__
 
 

@@ -7324,6 +7324,804 @@ unsigned int joaat_hash(unsigned int joaat_hash, unsigned char *key, size_t len)
     hash += (hash << 15);
     return hash;
 }
+
+
+
+#if 1 // CRC_CHECKSUM_API
+
+
+int verbose = 0;
+int g_iUpper = -1;
+
+
+
+/*===========================================================================
+FUNCTION 
+ checkCrc()
+
+DESCRIPTION
+
+DEPENDENCIES
+  
+RETURN VALUE
+
+SIDE EFFECTS
+
+===========================================================================*/
+unsigned char checkCrc(unsigned char* pData, int Len)
+{
+	unsigned int value =0;
+	int i, j, crc = 0xffff;
+	unsigned short crcCalc=0, crcOrg = 0;
+	unsigned char bCrcOk = 0; 
+	unsigned char* DataPtr = NULL;
+	
+	DataPtr = pData;
+	crcOrg =  *(DataPtr+Len-2) << 8 |*(DataPtr+Len-1);
+	
+	for(i = 0; i < Len-2; i++) 
+	{  
+		value = DataPtr[i];
+		value <<= 8; 
+		
+		for (j = 0; j < 8; j++) {
+			value <<= 1;
+			crc <<= 1;  
+			if ((crc ^ value) & 0x10000){ crc ^= 0x1021; }
+		}  
+	}
+	
+	crcCalc = ~crc & 0xffff;
+	
+	if(crcOrg == crcCalc) { return 1; }  
+	else { return 0; }
+}
+
+
+#ifdef CHECKSUM_PROGRESS_DISPLAY
+void ChecksumPrint(char *text, char *filename, __int64 Totfilesize, __int64 readsize, int insertCRC )
+{
+
+	if( 1==insertCRC ) return; // 2017.04.04
+
+	printf("\b%s>> (%s) -> reading : %lld Bytes \r", text, filename, Totfilesize );
+}
+
+void ClearScreen()
+{
+	#if 0
+	//          1234567890123456789012345678901234567890123456789012345678901234567890
+	LOG_V("                                                                                                   \r");
+	#endif
+}
+#endif	
+
+/* -------------------------------------------------------------------------
+CRC32        : 32-bit checksum using Cyclic Redundancy Check (CRC32). crc 
+CRC64-ISO    : 64-bit checksum using the Cyclic Redundancy Check defined by ISO (CRC-64-ISO) spcrc 
+CRC64-ECMA-182 : 64-bit checksum using the alternative Cyclic Redundancy Check defined in ECMA-182 (CRC-64-ECMA-182) altcrc 
+CRC32-CRC64 : Combination of CRC32 and CRC64 sequence checksums with the sequence length cdigest 
+MD5          : 128-bit Hash using Message Digest 5 (MD5) md 
+SHA1         : 160-bit Hash using Secure Hash Algorithm 1 (SHA-1) shaa 
+SHA2-224     : 224-bit Hash using Secure Hash Algorithm 2 (SHA-2) shab 
+SHA2-256     : 256-bit Hash using Secure Hash Algorithm 2 (SHA-2) shac 
+SHA2-384     : 384-bit Hash using Secure Hash Algorithm 2 (SHA-2) shad 
+SHA2-512     : 512-bit Hash using Secure Hash Algorithm 2 (SHA-2) shae 
+ ------------------------------------------------------------------------- */
+
+uint16_t g_calcCrc16;
+uint32_t g_calcCrc32;
+uint32_t g_calcAdler32;
+uint64_t g_calcCrc64;
+uint32_t g_calcJoaat;
+
+
+
+unsigned __int64 RunCRC16(char *infile_name, char *outfile_name, __int64 Fsize, int mIndex, int insertCRC, int iVerbosType, char *str_hash)
+{ 
+	uint16_t calcCrc16 = 0xFFFF; 
+	unsigned __int64  TotDLen=0LL;
+	size_t 	 LenRead=0;
+	
+	if( 0==mIndex )
+		printf("CRC16>> Creating CRC16 [ KS X ISO 18234-2 ]... \n");
+
+	if(data_buf) { free(data_buf); data_buf=NULL; }
+	data_buf = (unsigned char*)malloc( MAX_BUF_SIZ*sizeof(unsigned char) );
+
+	memset( data_buf, 0x00, MAX_BUF_SIZ*sizeof(unsigned char) );
+	
+	TotDLen = 0LL;
+	calcCrc16 = 0xFFFF; // initial value
+	while ( LenRead = fread(data_buf, sizeof(unsigned char), CRC_BUFSIZE, inpfile) )
+	{
+		TotDLen += LenRead;
+		g_calcCrc16 = calcCrc16 = make_crc16(calcCrc16, data_buf, LenRead);
+			
+	#ifdef CHECKSUM_PROGRESS_DISPLAY
+		ChecksumPrint("CRC16 Hashing", infile_name, TotDLen, LenRead, insertCRC );
+	#endif	
+	}
+
+	ClearScreen();
+
+	if(1 == insertCRC) 
+	{
+		if( g_iUpper ) // 2017.04.27
+			printf("%04X   *%s*%s__(%llu) \r\n", g_calcCrc16, str_hash, infile_name, TotDLen );
+		else
+			printf("%04x   *%s*%s__(%llu) \r\n", g_calcCrc16, str_hash, infile_name, TotDLen );
+
+		return TotDLen;
+	}
+	// ---------------------------------------	
+
+
+	if( inpfile ) // 2020.07.17 && outfile ) /// && TotDLen )	
+	{
+
+		if(verbose && (2==iVerbosType || 3==iVerbosType) )
+		{
+			if( g_iUpper )
+			{
+				if(outfile) fprintf(outfile,"%04X  *%s*%s__(%llu) \r\n", calcCrc16, str_hash,infile_name, TotDLen );
+			}
+			else
+			{
+				if(outfile) fprintf(outfile,"%04x  *%s*%s__(%llu) \r\n", calcCrc16, str_hash,infile_name, TotDLen );
+			}
+		}
+		else
+		{
+			if( g_iUpper )
+			{
+				if(outfile) fprintf(outfile,"%04X  *%s*%s \r\n", calcCrc16, str_hash,infile_name );
+			}
+			else
+			{
+				if(outfile) fprintf(outfile,"%04x  *%s*%s \r\n", calcCrc16, str_hash,infile_name );
+			}
+		}
+
+		if( 0==mIndex ) /// 1 file
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+				printf("%04x   *%s*%s__(%llu) \r\n", calcCrc16, str_hash, infile_name, TotDLen );
+			else
+				printf("%04x   *%s*%s \r\n", calcCrc16, str_hash, infile_name );
+		}
+		else /// multi-input
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+				printf("%04x   *%s*%s__(%llu) \r\n", calcCrc16, str_hash, infile_name, TotDLen );
+			else
+				printf("%04x   *%s*%s \r\n", calcCrc16, str_hash, infile_name );
+		}
+
+
+	}
+	else
+	{
+		printf("CRC16>> Can not create CRC16 for file [%s] or wrong length(%u) \r\n", infile_name, TotDLen );
+	}
+	
+	if(data_buf) { free(data_buf); data_buf=NULL; }
+
+	//Fsize = TotDLen; /* 인자로 값을 넘길경우,  맨마지막에 하라~~ else fclosed !!! */
+
+	return TotDLen;
+}
+
+
+
+unsigned __int64 RunKSC_CRC16(char *infile_name, char *outfile_name, __int64 Fsize, int mIndex, int insertCRC, int iVerbosType, char *str_hash)
+{ 
+	uint16_t calcCrc16 = 0xFFFF; 
+	unsigned __int64  TotDLen=0LL;
+	size_t	 LenRead=0;
+	
+	if( 0==mIndex )
+		printf("KSC-CRC16>> Creating KSC-CRC16 [ KSCIEC62056-61 ]... \n");
+
+	if(data_buf) { free(data_buf); data_buf=NULL; }
+	data_buf = (unsigned char*)malloc( MAX_BUF_SIZ*sizeof(unsigned char) );
+
+	memset( data_buf, 0x00, MAX_BUF_SIZ*sizeof(unsigned char) );
+	
+	TotDLen = 0LL;
+	calcCrc16 = 0xFFFF; // initial value
+	while ( LenRead = fread(data_buf, sizeof(unsigned char), CRC_BUFSIZE, inpfile) )
+	{
+		TotDLen += LenRead;
+		g_calcCrc16 = calcCrc16 = make_ksc_crc16(calcCrc16, data_buf, LenRead);
+			
+	#ifdef CHECKSUM_PROGRESS_DISPLAY
+		ChecksumPrint("KSC-CRC16 Hashing", infile_name, TotDLen, LenRead, insertCRC );
+	#endif	
+	}
+
+	ClearScreen();
+
+	if(1 == insertCRC) 
+	{
+		if( g_iUpper ) // 2017.04.27
+			printf("%04X   *%s*%s__(%llu) \r\n", g_calcCrc16, str_hash, infile_name, TotDLen );
+		else
+			printf("%04x   *%s*%s__(%llu) \r\n", g_calcCrc16, str_hash, infile_name, TotDLen );
+
+		return TotDLen;
+	}
+	// ---------------------------------------	
+
+
+	if( inpfile ) // 2020.07.17 && outfile ) /// && TotDLen )	
+	{
+
+		if(verbose && (2==iVerbosType || 3==iVerbosType) )
+		{
+			if( g_iUpper )
+			{
+				if(outfile) fprintf(outfile,"%04X  *%s*%s__(%llu) \r\n", calcCrc16, str_hash,infile_name, TotDLen );
+			}
+			else
+			{
+				if(outfile) fprintf(outfile,"%04x  *%s*%s__(%llu) \r\n", calcCrc16, str_hash,infile_name, TotDLen );
+			}
+		}
+		else
+		{
+			if( g_iUpper )
+			{
+				if(outfile) fprintf(outfile,"%04X  *%s*%s \r\n", calcCrc16, str_hash,infile_name );
+			}
+			else
+			{
+				if(outfile) fprintf(outfile,"%04x  *%s*%s \r\n", calcCrc16, str_hash,infile_name );
+			}
+		}
+
+		if( 0==mIndex ) /// 1 file
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+				printf("%04x   *%s*%s__(%llu) \r\n", calcCrc16, str_hash, infile_name, TotDLen );
+			else
+				printf("%04x   *%s*%s \r\n", calcCrc16, str_hash, infile_name );
+		}
+		else /// multi-input
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+				printf("%04x   *%s*%s__(%llu) \r\n", calcCrc16, str_hash, infile_name, TotDLen );
+			else
+				printf("%04x   *%s*%s \r\n", calcCrc16, str_hash, infile_name );
+		}
+
+	}
+	else
+	{
+		printf("KSC-CRC16>> Can not create KSC-CRC16 for file [%s] or wrong length(%u) \r\n", infile_name, TotDLen );
+	}
+	
+	if(data_buf) { free(data_buf); data_buf=NULL; }
+
+	//Fsize = TotDLen; /* 인자로 값을 넘길경우,  맨마지막에 하라~~ else fclosed !!! */
+
+	return TotDLen;
+}
+
+
+unsigned __int64 RunCRC16CCITT(char *infile_name, char *outfile_name, __int64 Fsize, int mIndex, int insertCRC, int iVerbosType, char *str_hash)
+{ 
+	uint16_t calcCrc16 = 0; 
+	unsigned __int64  TotDLen=0LL;
+	size_t 	 LenRead=0;
+
+	if(0==mIndex)
+		printf("CRC16CCITT>> Creating CRC16 [ CCITT standards ]..... \n");
+
+	data_buf = (unsigned char*)malloc( MAX_BUF_SIZ*sizeof(unsigned char) );
+
+	TotDLen = 0LL;
+	calcCrc16 = 0;
+	memset( data_buf, 0x00, MAX_BUF_SIZ*sizeof(unsigned char) );
+	while ( LenRead = fread(data_buf, sizeof(unsigned char), CRC_BUFSIZE, inpfile) )
+	{
+		TotDLen += LenRead;
+		g_calcCrc16 = calcCrc16 = make_crc16_ccitt( calcCrc16, data_buf, LenRead);
+		
+	#ifdef CHECKSUM_PROGRESS_DISPLAY
+		ChecksumPrint("CRC16CCITT Hashing", infile_name, TotDLen, LenRead, insertCRC  );
+	#endif		
+
+	}
+	ClearScreen();
+	
+	if(data_buf) { free(data_buf); data_buf=NULL; }
+
+	if(1 == insertCRC) 
+	{
+	
+		if( g_iUpper ) // 2017.04.27
+			printf("%04X   *%s*%s__(%llu) \r\n", g_calcCrc16, str_hash, infile_name, TotDLen );
+		else
+			printf("%04x   *%s*%s__(%llu) \r\n", g_calcCrc16, str_hash, infile_name, TotDLen );
+
+		return TotDLen;
+	}
+	// ---------------------------------------	
+
+
+	if( inpfile ) // 2020.07.17 && outfile )	
+	{
+		//fwrite((unsigned char*)&crc_res, sizeof(unsigned char), 2 , outfile);
+
+		if(verbose && (2==iVerbosType || 3==iVerbosType) )
+		{
+			if(outfile) fprintf(outfile,"%04x  *%s*%s__(%llu)  \r\n", calcCrc16, str_hash, infile_name, TotDLen);
+		}
+		else
+		{
+			if(outfile) fprintf(outfile,"%04x  *%s*%s  \r\n", calcCrc16, str_hash, infile_name);
+		}
+
+		if( 0==mIndex ) /// 1 file
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+			{
+				printf("%04x  *%s*%s__(%llu) \r\n", calcCrc16, str_hash, infile_name, TotDLen );
+			}
+			else
+			{
+				printf("%04x  *%s*%s \r\n", calcCrc16, str_hash, infile_name );
+			}
+		}
+		else /// multi-input files
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+				printf("%04x  *%s*%s__(%llu) \r\n", calcCrc16, str_hash, infile_name, TotDLen );
+			else
+				printf("%04x  *%s*%s \r\n", calcCrc16, str_hash, infile_name );
+		}
+
+	}
+	else
+	{
+		printf("CRC16CCITT> Can not create CRC16CCITT for file [%s] or wrong length(%u) \r\n", infile_name, TotDLen );
+	}
+
+	//*Fsize = TotDLen; /* 인자로 값을 넘길경우,  맨마지막에 하라~~ else fclosed !!! */
+
+	return TotDLen;
+}
+
+
+
+unsigned __int64 RunCRC32(char *infile_name, char *outfile_name, __int64 Fsize, int mIndex, int insertCRC, int iVerbosType, char *str_hash)
+{
+	uint32_t calcCrc32=0;
+	unsigned __int64  TotDLen=0;
+	size_t 	 LenRead=0;
+
+	if(0==mIndex)
+		printf("CRC32>> Creating CRC32 [ Polynomial : 0xEDB88320 ]... \n");
+
+	data_buf = (unsigned char*)malloc( MAX_BUF_SIZ*sizeof(unsigned char) );
+	memset( data_buf, 0x00, MAX_BUF_SIZ*sizeof(unsigned char) );
+
+	TotDLen = 0LL;
+	while ( LenRead = fread(data_buf, sizeof(unsigned char), CRC_BUFSIZE, inpfile) )
+	{
+		TotDLen += LenRead;
+
+	#if 0 // !Choice One!!!
+		g_calcCrc32 = calcCrc32 = make_crc32(calcCrc32, (void*)data_buf, LenRead);
+	#else
+		g_calcCrc32 = calcCrc32 = calcCRC32(data_buf, (unsigned long)LenRead, calcCrc32);
+	#endif
+
+	
+	#ifdef CHECKSUM_PROGRESS_DISPLAY
+		ChecksumPrint("CRC32 Hashing", infile_name, TotDLen, LenRead, insertCRC  );
+	#endif
+
+	}
+	ClearScreen();
+	
+	if(data_buf) { free(data_buf); data_buf=NULL; }
+
+	if(1 == insertCRC) 
+	{
+		if( g_iUpper ) // 2017.04.27
+			printf("%08X   *%s*%s__(%llu) \r\n", g_calcCrc32, str_hash, infile_name, TotDLen );
+		else	
+			printf("%08x   *%s*%s__(%llu) \r\n", g_calcCrc32, str_hash, infile_name, TotDLen );
+
+		return TotDLen;
+	}
+	// ---------------------------------------	
+
+	if( inpfile ) //  2020.07.17 && outfile )
+	{
+
+		if(verbose && (2==iVerbosType || 3==iVerbosType) )
+		{
+			if(outfile) fprintf(outfile,"%08x  *%s*%s__(%llu) \r\n", calcCrc32, str_hash, infile_name, TotDLen );
+		}
+		else
+		{
+			if(outfile) fprintf(outfile,"%08x  *%s*%s \r\n", calcCrc32, str_hash, infile_name );
+		}
+
+		if(0==mIndex) /// 1 file
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+			{
+				printf("%08x  *%s*%s__(%llu) \r\n", calcCrc32, str_hash, infile_name, TotDLen );
+			}
+			else
+			{
+				printf("%08x  *%s*%s \r\n", calcCrc32, str_hash, infile_name );
+			}
+		}
+		else /// multi-input files
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+				printf("%08x  *%s*%s__(%llu) \r\n", calcCrc32, str_hash, infile_name, TotDLen  );
+			else
+				printf("%08x  *%s*%s \r\n", calcCrc32, str_hash, infile_name );
+		}
+
+
+	}
+	else
+	{
+		printf("CRC32>> Can not create CRC32 for file [%s]. \r\n", infile_name );
+	}
+
+
+	//*Fsize = TotDLen; /* 인자로 값을 넘길경우,  맨마지막에 하라~~ else fclosed !!! */
+
+	return TotDLen;
+}
+
+
+unsigned __int64 RunCRC64(char *infile_name, char *outfile_name, __int64 Fsize, int mIndex, int insertCRC, int iVerbosType, char *str_hash)
+{
+	uint64_t calcCrc64 = 0ULL;
+	unsigned __int64  TotDLen=0LL;
+	size_t 	 LenRead=0;
+
+	if(0==mIndex)
+		printf("CRC64>> Creating CRC64 [ Polynomial : 0xad93d23594c935a9 ]... \n");
+
+	data_buf = (unsigned char*)malloc( MAX_BUF_SIZ*sizeof(unsigned char) );
+	memset( data_buf, 0x00, MAX_BUF_SIZ*sizeof(unsigned char) );
+
+	TotDLen = 0LL;
+	while ( LenRead = fread(data_buf, sizeof(unsigned char), CRC_BUFSIZE, inpfile) )
+	{
+		TotDLen += LenRead;
+
+	#if 1 
+		g_calcCrc64 = calcCrc64 = make_crc64(calcCrc64, (void*)data_buf, LenRead);
+	#else
+		///g_calcCrc64 = calcCrc64 = crc64(calcCrc64, (void*)data_buf, LenRead);
+	#endif
+	
+	#ifdef CHECKSUM_PROGRESS_DISPLAY
+		ChecksumPrint("CRC64 Hashing", infile_name, TotDLen, LenRead, insertCRC  );
+	#endif
+
+	}
+	ClearScreen();
+
+	if(data_buf) { free(data_buf); data_buf=NULL; }
+
+	if(1 == insertCRC) // in header
+	{
+		if( g_iUpper ) // 2017.04.27
+			printf("%016llX    *%s*%s__(%llu) \r\n", g_calcCrc64, str_hash, infile_name, TotDLen );
+		else	
+			printf("%016llx    *%s*%s__(%llu) \r\n", g_calcCrc64, str_hash, infile_name, TotDLen );
+
+		return TotDLen;
+	}
+	// --------------------------------------------------------------------	
+
+	if( inpfile ) //  2020.07.17 && outfile )
+	{
+		if(verbose && (2==iVerbosType || 3==iVerbosType) )
+		{
+			if(outfile) fprintf(outfile,"%016llx  *%s*%s__(%llu) \r\n", calcCrc64, str_hash, infile_name, TotDLen );
+		}
+		else
+		{
+			if(outfile) fprintf(outfile,"%016llx  *%s*%s \r\n", calcCrc64, str_hash, infile_name );
+		}
+
+		if( 0==mIndex ) /// 1 files ---
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+			{
+				printf("%016llx  *%s*%s__(%llu) \r\n", calcCrc64, str_hash, infile_name, TotDLen );
+			}
+			else
+			{
+				printf("%016llx  *%s*%s \r\n", calcCrc64, str_hash, infile_name  );
+			}
+		}
+		else /// multi-input files
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+				printf("%016llx  *%s*%s__(%llu) \r\n", calcCrc64, str_hash, infile_name, TotDLen );
+			else
+				printf("%016llx  *%s*%s \r\n", calcCrc64, str_hash, infile_name );
+		}
+
+	}
+	else
+	{
+		printf("CRC64>> Can not create CRC64 for file [%s]. \r\n", infile_name );
+	}
+
+	//*Fsize = TotDLen; /* 인자로 값을 넘길경우,  맨마지막에 하라~~ else fclosed !!! */
+
+	return TotDLen;
+}
+
+
+
+unsigned __int64 RunCRC64_isc(char *infile_name, char *outfile_name, __int64 Fsize, int mIndex, int insertCRC, int iVerbosType, char *str_hash)
+{
+	uint64_t calcCrc64 = 0ULL;
+	unsigned __int64  TotDLen=0LL;
+	size_t 	 LenRead=0;
+
+	if(0==mIndex)
+		printf("CRC64>> Creating CRC64_ISC(Internet Systems Consortium)... \n");
+
+	data_buf = (unsigned char*)malloc( MAX_BUF_SIZ*sizeof(unsigned char) );
+	memset( data_buf, 0x00, MAX_BUF_SIZ*sizeof(unsigned char) );
+
+	TotDLen = 0LL;
+
+	isc_crc64_init(); // Internet Consorisum C
+	while ( LenRead = fread(data_buf, sizeof(unsigned char), CRC_BUFSIZE, inpfile) )
+	{
+		TotDLen += LenRead;
+
+	#if 0 // NEVER!!! 
+		g_calcCrc64 = calcCrc64 = make_crc64(calcCrc64, (void*)data_buf, LenRead);
+	#else
+		g_calcCrc64 = calcCrc64 = isc_crc64_update(calcCrc64, (void*)data_buf, LenRead);
+	#endif
+	
+	#ifdef CHECKSUM_PROGRESS_DISPLAY
+		ChecksumPrint("CRC64_ISC Hashing", infile_name, TotDLen, LenRead, insertCRC  );
+	#endif
+	}
+
+	g_calcCrc64 = calcCrc64 = isc_crc64_final(calcCrc64);
+
+	
+	ClearScreen();
+
+	if(data_buf) { free(data_buf); data_buf=NULL; }
+
+	if(1 == insertCRC) // in header
+	{
+		if( g_iUpper ) // 2017.04.27
+			printf("%016llX    *%s*%s__(%llu) \r\n", g_calcCrc64, str_hash, infile_name, TotDLen );
+		else	
+			printf("%016llx    *%s*%s__(%llu) \r\n", g_calcCrc64, str_hash, infile_name, TotDLen );
+
+		return TotDLen;
+	}
+	// --------------------------------------------------------------------	
+
+	if( inpfile ) //  2020.07.17 && outfile )
+	{
+		if(verbose && (2==iVerbosType || 3==iVerbosType) )
+		{
+			if(outfile) fprintf(outfile,"%016llx  *%s*%s__(%llu) \r\n", calcCrc64, str_hash, infile_name, TotDLen );
+		}
+		else
+		{
+			if(outfile) fprintf(outfile,"%016llx  *%s*%s \r\n", calcCrc64, str_hash, infile_name );
+		}
+
+		if( 0==mIndex ) /// 1 files ---
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+			{
+				printf("%016llx  *%s*%s__(%llu) \r\n", calcCrc64, str_hash, infile_name, TotDLen );
+			}
+			else
+			{
+				printf("%016llx  *%s*%s \r\n", calcCrc64, str_hash, infile_name  );
+			}
+		}
+		else /// multi-input files
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+				printf("%016llx  *%s*%s__(%llu) \r\n", calcCrc64, str_hash, infile_name, TotDLen );
+			else
+				printf("%016llx  *%s*%s \r\n", calcCrc64, str_hash, infile_name );
+		}
+
+	}
+	else
+	{
+		printf("CRC64_ISC>> Can not create CRC64ISC for file [%s]. \r\n", infile_name );
+	}
+
+	//*Fsize = TotDLen; /* 인자로 값을 넘길경우,  맨마지막에 하라~~ else fclosed !!! */
+
+	return TotDLen;
+}
+
+
+unsigned __int64 RunAdler32(char *infile_name, char *outfile_name, __int64 Fsize, int mIndex, int insertCRC, int iVerbosType, char *str_hash)
+{
+	uint32_t calcAdler32 = 1;
+	unsigned __int64  TotDLen=0;
+	size_t	 LenRead=0;
+	
+	if(0==mIndex)
+		printf("ADLER32>> Creating Adler32 [ zlib ]... \n");
+
+	data_buf = (unsigned char*)malloc( MAX_BUF_SIZ*sizeof(unsigned char) );
+	memset( data_buf, 0x00, MAX_BUF_SIZ*sizeof(unsigned char) );
+
+	TotDLen = 0LL;
+	while ( LenRead = fread(data_buf, sizeof(unsigned char), CRC_BUFSIZE, inpfile) )
+	{
+		TotDLen += LenRead;
+		g_calcAdler32 = calcAdler32 = make_adler32(calcAdler32, data_buf, LenRead);
+
+	#ifdef CHECKSUM_PROGRESS_DISPLAY
+		ChecksumPrint("ADLER32 Hashing", infile_name, TotDLen, LenRead, insertCRC  );
+	#endif
+
+	}
+	ClearScreen();
+
+	if(data_buf) { free(data_buf); data_buf=NULL; }
+
+	if(1 == insertCRC) 
+	{
+		if( g_iUpper ) // 2017.04.27
+			printf("%08X     *%s*%s__(%llu) \r\n", g_calcAdler32, str_hash, infile_name, TotDLen );
+		else
+			printf("%08x     *%s*%s__(%llu) \r\n", g_calcAdler32, str_hash, infile_name, TotDLen );
+
+		return TotDLen;
+	}
+	// ---------------------------------------	
+	
+	if( inpfile ) // 2020.07.17  && outfile )
+	{
+		if(verbose && (2==iVerbosType || 3==iVerbosType) )
+		{
+			if(outfile) fprintf(outfile,"%08x  *%s*%s__(%llu) \r\n", calcAdler32, str_hash, infile_name, TotDLen );
+		}
+		else
+		{
+			if(outfile) fprintf(outfile,"%08x  *%s*%s \r\n", calcAdler32, str_hash, infile_name );
+		}
+
+		if( 0==mIndex ) /// 1 files ---
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+			{
+				printf("%08x  *%s*%s__(%llu) \r\n", calcAdler32, str_hash, infile_name, TotDLen );
+			}
+			else
+			{
+				printf("%08x  *%s*%s  \r\n", calcAdler32, str_hash, infile_name );
+			}
+		}
+		else /// multi-input files
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+				printf("%08x  *%s*%s__(%llu) \r\n", calcAdler32, str_hash, infile_name, TotDLen );
+			else
+				printf("%08x  *%s*%s \r\n", calcAdler32, str_hash, infile_name );
+		}
+
+
+	}
+	else
+	{
+		printf("ADLER32>> Can not create Adler32 for file [%s]. \r\n", infile_name );
+	}
+
+
+	//*Fsize = TotDLen; /* 인자로 값을 넘길경우,  맨마지막에 하라~~ else fclosed !!! */
+
+	return TotDLen;
+}
+
+
+
+unsigned __int64 RunJoaat(char *infile_name, char *outfile_name, __int64 Fsize, int mIndex, int insertCRC, int iVerbosType, char *str_hash)
+{
+	uint32_t calcJoaat = 0;
+	unsigned __int64  TotDLen=0;
+	size_t	 LenRead=0;
+	
+	if(0==mIndex)
+		printf("JOAAT>> Creating JOAAT Hash... \n");
+
+	data_buf = (unsigned char*)malloc( MAX_BUF_SIZ*sizeof(unsigned char) );
+	memset( data_buf, 0x00, MAX_BUF_SIZ*sizeof(unsigned char) );
+
+	TotDLen = 0LL;
+	calcJoaat = 0;
+	while ( LenRead = fread(data_buf, sizeof(unsigned char), BUFSIZE, inpfile) )
+	{
+		TotDLen += LenRead;
+		g_calcJoaat = calcJoaat = joaat_hash(calcJoaat, data_buf, LenRead);
+		
+	#ifdef CHECKSUM_PROGRESS_DISPLAY
+		ChecksumPrint("JOAAT Hashing", infile_name, TotDLen, LenRead, insertCRC  );
+	#endif
+
+	}
+	ClearScreen();
+
+	if(data_buf) { free(data_buf); data_buf=NULL; }
+
+	if(1 == insertCRC) 
+	{
+		if( g_iUpper ) // 2017.04.27
+			printf("%08X   *%s*%s__(%llu) \r\n", g_calcJoaat, str_hash, infile_name, TotDLen );
+		else
+			printf("%08x   *%s*%s__(%llu) \r\n", g_calcJoaat, str_hash, infile_name, TotDLen );
+
+		return TotDLen;
+	}
+	// ---------------------------------------	
+	
+	if( inpfile ) // 2020.07.17  && outfile )
+	{
+		if(verbose && (2==iVerbosType || 3==iVerbosType) )
+		{
+			if(outfile) fprintf(outfile,"%08x  *%s*%s__(%llu) \r\n", calcJoaat, str_hash, infile_name, TotDLen );
+		}
+		else
+		{
+			if(outfile) fprintf(outfile,"%08x  *%s*%s \r\n", calcJoaat, str_hash, infile_name );
+		}
+
+		if( 0==mIndex ) /// 1 files ---
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+			{
+				printf("%08x  *%s*%s__(%llu) \r\n", calcJoaat, str_hash, infile_name, TotDLen );
+			}
+			else
+			{
+				printf("%08x  *%s*%s  \r\n", calcJoaat, str_hash, infile_name );
+			}
+		}
+		else /// multi-input files
+		{
+			if(verbose && (2==iVerbosType || 3==iVerbosType) )
+				printf("%08x  *%s*%s__(%llu) \r\n", calcJoaat, str_hash, infile_name, TotDLen );
+			else
+				printf("%08x  *%s*%s \r\n", calcJoaat, str_hash, infile_name );
+		}
+	}
+	else
+	{
+		printf("JOAAT>> Can not create JOAAT for file [%s]. \r\n", infile_name );
+	}
+
+	//*Fsize = TotDLen; /* 인자로 값을 넘길경우,  맨마지막에 하라~~ else fclosed !!! */
+	return TotDLen;
+}
+#endif
+
 #endif // CRC_CHECKSUM
 
 

@@ -85,12 +85,16 @@ typedef uint64_t  		uintmax_t;
 
 
 #ifndef min /* if macro not already defined */ 
-#define min(a,b) ( (a)<(b) ? (a) : (b) ) 
+#define min(a,b) 		((a)<(b) ? (a) : (b)) 
 #endif /* if min macro not already defined */ 
 
 #ifndef max
-#define max(a,b) ( (a)>(b) ? (a) : (b) ) 
+#define max(a,b) 		((a)>(b) ? (a) : (b)) 
 #endif
+
+#define swap(a) 		(((a)<<8)|((a)>>8))     
+
+#define MATH_PI 		3.1415926535897932384626433832795F
 
 
 
