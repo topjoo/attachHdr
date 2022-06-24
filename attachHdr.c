@@ -172,22 +172,6 @@ int istextfile(char *txtstr)
 
 
 
-void waiting(int cc)
-{
-	if( 0 == (cc%4) )
-		printf("\rWaiting...-\b");
-	else if( 1 == (cc%4) )
-		printf("\rWaiting...\\\b");
-	else if( 2 == (cc%4) )
-		printf("\rWaiting...|\b");
-	else if( 3 == (cc%4) )
-		printf("\rWaiting.../\b");
-	else
-		printf("\rWaiting...+\b");
-
-}
-
-
 void 	FileCounter(char *txt)
 {
 	struct 	_finddata_t 	root_files;
@@ -4848,9 +4832,6 @@ int main(int argc, char *argv[])
 			while( fr_size = fread(read_buf, sizeof(unsigned char), (RD_BUF_SIZ), inpfile ) )
 			{
 				fwrite(read_buf, sizeof(unsigned char), fr_size, outfile); 
-				//printf("\rReading size = %d      ", fr_size);
-				//waiting(count);
-				//count++;
 			}
 
 			printf("\nHDR>> Attached Header!! (%dBytes) - OK", len_attach_hdr);
@@ -4889,9 +4870,6 @@ int main(int argc, char *argv[])
 			while( fr_size = fread(read_buf, sizeof(unsigned char), BUFSIZE, inpfile ) )
 			{
 				fwrite(read_buf, sizeof(unsigned char), fr_size, outfile); 
-				//printf("\rReading size = %d      ", fr_size);
-				//waiting(count);
-				//count++;
 			}
 
 			printf("\nHDR>> Deleted Header!! - OK");
