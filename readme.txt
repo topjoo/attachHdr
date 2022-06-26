@@ -7,3 +7,9 @@ C:\> takeown /r /d y /f cygwin
 C:\> icacls cygwin /t /grant Everyone:F
 C:\> 삭제하면 된다.
 
+■ SSH
+$ ssh-keygen
+
+
+
+
