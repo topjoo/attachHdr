@@ -11,7 +11,7 @@
 @REM --------------------------------------------------------------------------------------------------------
 @REM --- Attach Header to binary ----
 @REM
-@REM ah.exe -b JF200S-RevA  --model STM32F302K8U6 --cinfo MD5      --input ah.bin  --output aho.md5   -v 1.8.3
+@REM ah.exe -b JF200S-RevA  --model STM32F302K8U6 --cinfo MD5      --input STM32.bin --output STM32.out  -v 1.8.3
 ah.exe --board JF200S-RevA  --model STM32F302K8U6 --cinfo sha1      --input ah.bin  --output aho.sha1   -v 1.80.32
 @REM ah.exe -b M200S-RevA   --model STM32F302K8U6 --cinfo sha224   --input ah.bin  --output aho.R30   -v 1.8.3
 ah.exe --board M200S-RevA   --model STM32F302K8U6 --cinfo date   --input ah.bin  --output aho.date  -v 1.8.3
