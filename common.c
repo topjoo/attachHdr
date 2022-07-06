@@ -19,17 +19,22 @@
 /* error messages with function name and argument list */
 void errormsg(const char *func, int line, const char *str, ...) 
 {
-	char msg[STR_LEN];
+	char msg[STR_LEN] = {0,};
 	va_list argptr;	
-	char tmp[STR_LEN];
+	char tmp[STR_LEN] = {0,};
 
 	va_start(argptr,str);	
 	vsnprintf(msg, STR_LEN-1, str, argptr);	
 
-#if 0
-	fprintf(stderr, "%-12s:%5d: %s\n", func, line, msg);	
+#if 1
+	#if 1
+	sprintf(tmp,"%s(%d)", func, line);
+	fprintf(stderr, "%-15s: %s", tmp, msg);	
+	#else
+	fprintf(stderr, "%-15s:%5d: %s", func, line, msg);	
+	#endif
 #else
-	fprintf(stderr, "%-12s: %s\n", func, msg);	
+	fprintf(stderr, "%-15s: %s", func, msg);	
 #endif
 
 	va_end(argptr);
