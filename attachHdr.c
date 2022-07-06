@@ -137,6 +137,7 @@
 #include "mjd.c"
 #include "hex2bin.c"
 #include "elfinfo.c"
+#include "common.c"
 
 
 
@@ -1097,7 +1098,6 @@ int main(int argc, char *argv[])
 
 	/// -----------------------------------------------
 
-
 	help_brief();
 
 
@@ -1113,7 +1113,7 @@ int main(int argc, char *argv[])
 	while( EOF != (opt = getopt(argc, argv, strOpt) ) ) 
 #endif
 	{
-     
+
 		switch(opt) 
 		{ 
 
@@ -1205,7 +1205,7 @@ int main(int argc, char *argv[])
 						if( (outfile = fopen( "number.mjd", "a+")) == NULL )  /// test sample
 						{
 							beep(700,100);
-							printf("\n\n[++ERROR++] Can not create output file (number.mjd). \n" );
+							myerror("\n\n[++ERROR++] Can not create output file (number.mjd). \n");
 
 							AllFilesClosed();
 							exit(0); /// help();
@@ -1272,7 +1272,7 @@ int main(int argc, char *argv[])
 						if( (outfile = fopen( "date.mjd", "a+")) == NULL )  /// test sample
 						{
 							beep(700,100);
-							printf("\n\n[++ERROR++] Can not create output file (date.mjd). \n" );
+							myerror("\n\n[++ERROR++] Can not create output file (date.mjd). \n");
 							AllFilesClosed();
 
 							exit(0); /// help();
@@ -1319,7 +1319,7 @@ int main(int argc, char *argv[])
 					}
 					else
 					{
-						printf("\nMJD>> WARNING:Wrong option. --mjd [date|mjd]. Check option.\n");
+						myerror("\nMJD>> WARNING:Wrong option. --mjd [date|mjd]. Check option.\n");
 
 						beep(700,100);
 						AllFilesClosed();
@@ -1330,7 +1330,7 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-					printf("\nMJD>> WARNING:option error. check option --mjd [date|mjd]. \r\n");
+					myerror("\nMJD>> WARNING:option error. check option --mjd [date|mjd]. \r\n");
 
 					beep(700,100);
 					AllFilesClosed();
@@ -1360,7 +1360,7 @@ int main(int argc, char *argv[])
 						iRGB = 565;
 					else
 					{
-						printf("RGB Type : wrong option [%s] \n", str_BMPType);
+						myerror("RGB Type : wrong option [%s] \n", str_BMPType);
 
 						beep(700,100);
 						AllFilesClosed(); // 2020.07.10
@@ -1687,11 +1687,11 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-					printf("\n\n WARNING:wrong option --float [float number]. \r\n");
-			
+					myerror("\n\n WARNING:wrong option --float [float number]. \r\n");
+
 					beep(700,100);
-					AllFilesClosed(); // 2020.07.10
-					exit(0); /// 2017.11.21
+					AllFilesClosed();
+					exit(0);
 			
 					return 0;
 				}
@@ -1794,7 +1794,7 @@ int main(int argc, char *argv[])
 				printf("\n");
 				if( (isMot2bin!=1) && (isIntel2bin!=1) )
 				{
-					printf("[++ERROR Starting Address++] Need option --intel or --motorola \n");
+					myerror("[++ERROR Starting Address++] Need option --intel or --motorola \n");
 
 					beep(700,100);
 					AllFilesClosed(); // 2020.07.10
@@ -1849,7 +1849,7 @@ int main(int argc, char *argv[])
 				{
 					printf("\n");
 					printf("[++ERROR Motorola++] Choice one --motorola or --intel option \n");
-				
+
 					beep(700,100);
 					AllFilesClosed(); // 2020.07.10
 					exit(0); /// 2017.11.21
@@ -1908,8 +1908,7 @@ int main(int argc, char *argv[])
 				printf("\n");
 				if( (isMot2bin!=1) && (isIntel2bin!=1) && (1!=isFileMerge) && (1!=isFillSize) )
 				{
-					printf("[++ERROR PADBYTE++] Need option --intel or --motorola or --fillsize [size] \n");
-				
+					myerror("[++ERROR PADBYTE++] Need option --intel or --motorola or --fillsize [size] \n");
 
 					beep(700,100);
 					AllFilesClosed(); // 2020.07.10
@@ -1932,8 +1931,8 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-					printf("\n\n WARNING:wrong option --padbyte [hexa value]. check option [%s] \r\n", strPadByte);
-				
+					myerror("\n\n WARNING:wrong option --padbyte [hexa value]. check option [%s] \r\n", strPadByte);
+
 					beep(700,100);
 					AllFilesClosed(); // 2020.07.10
 					exit(0); /// 2017.11.21

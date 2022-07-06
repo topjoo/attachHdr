@@ -14,6 +14,9 @@
 
 
 #include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include <errno.h>
 
 
 typedef int boolean;
@@ -110,6 +113,20 @@ typedef enum
 	true = 1,
 } bool;
 
+
+
+
+// macros
+#if 0
+#define DEBUGMSG(msg...) errormsg("DEBUG", msg);
+#else
+#define DEBUGMSG(msg...)
+#endif
+
+void errormsg(const char *func, int line, const char *str, ...);
+
+
+#define myerror(msg...) errormsg(__func__, __LINE__, msg);
 
 #endif //__COMMON_H__
 
