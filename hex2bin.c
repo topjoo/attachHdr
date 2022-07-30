@@ -631,8 +631,8 @@ void VerifyChecksumValue(void)
 {
     if ((Checksum != 0) && Enable_Checksum_Error)
 	{
-		fprintf(stderr,"\n[++ERROR++]Checksum error in record %d: should be %#02x \n",
-			Record_Nb, (256 - Checksum) & 0xFF);
+		fprintf(stderr,"\n[++ERROR++]Checksum error in record %d: should be %#02x, not be %#02x \n",
+			Record_Nb, (256 - Checksum) & 0xFF, Checksum);
 		Status_Checksum_Error = true;
 	}
 }

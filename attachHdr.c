@@ -6230,7 +6230,7 @@ int main(int argc, char *argv[])
 	
 					/* Read the Checksum value. */
 					result = sscanf (pBin, "%2x",&Record_Checksum);
-					if (result != 1) fprintf(stderr,"Line%6d ::Error in hex file\n", Record_Nb);
+					if (result != 1) fprintf(stderr,"Line%6d ::Error in hex file (result%d) \n", Record_Nb, result);
 					break;
 	
 				case 5:
@@ -6265,7 +6265,7 @@ int main(int argc, char *argv[])
 				/* Verify Checksum value. */
 				if (((Record_Checksum + Checksum) != 0xFF) && Enable_Checksum_Error)
 				{
-					printf("Line%6d ::Checksum error: should be 0x%02x, not be 0x%02x \n",Record_Nb, 255-Checksum, Checksum); ///, HexaLine);
+					printf("Line%6d ::Checksum error: should be 0x%02x, not be 0x%02x. \n",Record_Nb, 255-Checksum, Checksum); ///, HexaLine);
 					Status_Checksum_Error = true;
 				}
 			}
@@ -6848,7 +6848,7 @@ int main(int argc, char *argv[])
 					if (Seg_Lin_Select == SEGMENTED_ADDRESS)
 					{
 						result = sscanf (pBin, "%4x%2x",&Segment,&temp2);
-						if (result != 2) fprintf(stderr,":2:Error in line %d of hex file +++\n", Record_Nb);
+						if (result != 2) fprintf(stderr,":2:Error in line %d of hex file (result:%d) \n", Record_Nb, result);
 	
 						/* Update the current address. */
 						Phys_Addr = (Segment << 4);
