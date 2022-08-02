@@ -5780,6 +5780,7 @@ int main(int argc, char *argv[])
 		unsigned int Exec_Address;
 		unsigned int temp;
 		unsigned int Record_Count, Record_Checksum;
+		unsigned int hexFamily=2; // Intel Family:1, Motorola Family : 2
 	
 		byte	Data_Str[HEX_MAX_LINE_SIZE];
 
@@ -6265,7 +6266,7 @@ int main(int argc, char *argv[])
 				/* Verify Checksum value. */
 				if (((Record_Checksum + Checksum) != 0xFF) && Enable_Checksum_Error)
 				{
-					printf("Line%6d ::Checksum error: should be 0x%02x, not be 0x%02x. \n",Record_Nb, 255-Checksum, Checksum); ///, HexaLine);
+					printf("Line%6d ::Checksum error: should be 0x%02x, not be 0x%02x. \n",Record_Nb, 255-Checksum, Record_Checksum); ///, HexaLine);
 					Status_Checksum_Error = true;
 				}
 			}
@@ -6346,7 +6347,8 @@ int main(int argc, char *argv[])
 		unsigned int Type;
 		unsigned int Offset = 0x00;
 		unsigned int temp;
-	
+		unsigned int hexFamily=1; // Intel Family:1, Motorola Family : 2
+		
 		/* We will assume that when one type of addressing is selected, it will be valid for all the
 		 current file. Records for the other type will be ignored. */
 		unsigned int Seg_Lin_Select = NO_ADDRESS_TYPE_SELECTED;
@@ -6818,7 +6820,9 @@ int main(int argc, char *argv[])
 	
 						/* Verify Checksum value. */
 						Checksum = (Checksum + temp2) & 0xFF;
-						VerifyChecksumValue();
+
+
+						VerifyChecksumValue(temp2, hexFamily);
 					}
 					else
 					{
@@ -6855,7 +6859,9 @@ int main(int argc, char *argv[])
 	
 						/* Verify Checksum value. */
 						Checksum = (Checksum + (Segment >> 8) + (Segment & 0xFF) + temp2) & 0xFF;
-						VerifyChecksumValue();
+
+						VerifyChecksumValue((Segment >> 8) + (Segment & 0xFF) + temp2, hexFamily);
+
 					}
 					break;
 	
@@ -6920,8 +6926,9 @@ int main(int argc, char *argv[])
 							Checksum = (Checksum + (Phys_AddrTemp >> 8) + (Phys_AddrTemp & 0xFF) ) & 0xFF;							
 						}
 					#endif
-					
-						VerifyChecksumValue();
+
+						VerifyChecksumValue( (Phys_AddrTemp >> 8) + (Phys_AddrTemp & 0xFF), hexFamily);
+
 					}
 					break;
 	

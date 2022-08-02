@@ -40,7 +40,7 @@
 
 
 
-char Attversion[] = "3.1.1"; /* ver 3.1.1 : 2022.06.22 : Version up because of function modulization */
+char Attversion[] = "3.1.2"; /* ver 3.1.1 : 2022.06.22 : Version up because of function modulization */
 char EmailText[]  = "tp.joo@daum.net";
 
 

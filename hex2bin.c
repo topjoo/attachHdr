@@ -627,13 +627,25 @@ bool GetBoolean(const char *str)
 }
 
 
-void VerifyChecksumValue(void)
+void VerifyChecksumValue(unsigned int checksum, unsigned int hexFam)
 {
-    if ((Checksum != 0) && Enable_Checksum_Error)
+	if( hexFam==1 )
 	{
-		fprintf(stderr,"\n[++ERROR++]Checksum error in record %d: should be %#02x, not be %#02x \n",
-			Record_Nb, (256 - Checksum) & 0xFF, Checksum);
-		Status_Checksum_Error = true;
+	    if ((Checksum != 0) && Enable_Checksum_Error)
+		{
+			fprintf(stderr,"\n[++ERROR++]Checksum error in record %d: less then %#02x, should be %#02x \n",
+				Record_Nb, (256 - Checksum) & 0xFF, (checksum + ((256-Checksum) & 0xFF))&0xFF );
+			Status_Checksum_Error = true;
+		}
+	}
+	else // if( hexFam==2 )
+	{
+	    if ((Checksum != 0) && Enable_Checksum_Error)
+		{
+			fprintf(stderr,"\n[++ERROR++]Checksum error in record %d: should be %#02x, not be %#02x \n",
+				Record_Nb, (256 - Checksum) & 0xFF, Checksum);
+			Status_Checksum_Error = true;
+		}
 	}
 }
 
