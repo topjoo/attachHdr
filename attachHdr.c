@@ -6451,7 +6451,7 @@ int main(int argc, char *argv[])
 					// ---------------------------------
 					if( iErrCount > MAX_ERR_COUNT*2 ) // 2020.06.30
 					{
-						printf("\n\n Check Intel hexa family type!!!  Maybe MOTOROLA family in this hex file!! \n");
+						printf("\n\nCheck Intel hexa family type!!!  Maybe MOTOROLA family in this hex file!! \n");
 					
 						iErrCount = 0; // clear
 
