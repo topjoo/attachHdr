@@ -39,7 +39,7 @@
 #define MAX_BIN_LENGTH_SIZE 		0x800000 // Max_Length 8MByte Limit
 
 #define HEX_MAX_LINE_SIZE 			1024
-#define MAX_ERR_COUNT 				50 // error count
+#define MAX_ERR_COUNT 				10 // error count
 
 
 /* Size in bytes.  Max length must be in powers of 2: 1,2,4,8,16,32, etc. */
@@ -68,6 +68,7 @@ int isPadByte = 0, isPadByteAllArea=0;
 
 boolean Enable_Checksum_Error = 1; // check checksum
 boolean Status_Checksum_Error = false;
+unsigned int checksum_err_cnt = 0;
 byte 	Checksum;
 unsigned int Record_Nb;
 	
@@ -633,19 +634,26 @@ void VerifyChecksumValue(unsigned int checksum, unsigned int hexFam)
 	{
 	    if ((Checksum != 0) && Enable_Checksum_Error)
 		{
-			fprintf(stderr,"\n[++ERROR++]Checksum error in record %d: less then %#02x, should be %#02x \n",
-				Record_Nb, (256 - Checksum) & 0xFF, (checksum + ((256-Checksum) & 0xFF))&0xFF );
+			fprintf(stderr,"[++ERROR++]Checksum error in record %d: less then 0x%02x, should be 0x%02x. \n",
+				Record_Nb, (256-Checksum)&0xFF, (checksum + ((256-Checksum) & 0xFF))&0xFF );
+
+			checksum_err_cnt ++;	
+
 			Status_Checksum_Error = true;
 		}
 	}
 	else // if( hexFam==2 )
 	{
-	    if ((Checksum != 0) && Enable_Checksum_Error)
+		if (((checksum + Checksum) != 0xFF) && Enable_Checksum_Error)
 		{
-			fprintf(stderr,"\n[++ERROR++]Checksum error in record %d: should be %#02x, not be %#02x \n",
-				Record_Nb, (256 - Checksum) & 0xFF, Checksum);
+			fprintf(stderr,"[++ERROR++]Checksum error in Line%6d: should be 0x%02x, not be 0x%02x. \n",
+				Record_Nb, 255-Checksum, checksum ); 
+
+			checksum_err_cnt ++;	
+
 			Status_Checksum_Error = true;
 		}
+
 	}
 }
 

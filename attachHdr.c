@@ -5787,7 +5787,7 @@ int main(int argc, char *argv[])
 
 		Phys_AddrTemp = 0; // added at 2016.03.10
 		iErrCount = 0; // clear
-	
+		checksum_err_cnt = 0;	// 2022.08.03
 
 		memset( HexaLine, 0x00, sizeof(HexaLine) );
 		memset( Data_Str, 0x00, sizeof(Data_Str) );
@@ -6264,11 +6264,15 @@ int main(int argc, char *argv[])
 				Record_Checksum &= 0xFF;
 	
 				/* Verify Checksum value. */
+				#if 1
+				VerifyChecksumValue(Record_Checksum, hexFamily); /* hexFamily:2 MOTOROLA family*/
+				#else
 				if (((Record_Checksum + Checksum) != 0xFF) && Enable_Checksum_Error)
 				{
 					printf("Line%6d ::Checksum error: should be 0x%02x, not be 0x%02x. \n",Record_Nb, 255-Checksum, Record_Checksum); ///, HexaLine);
 					Status_Checksum_Error = true;
 				}
+				#endif
 			}
 		}
 		while (!feof (inpfile));
@@ -6305,7 +6309,7 @@ int main(int argc, char *argv[])
 		if (Status_Checksum_Error && Enable_Checksum_Error)
 		{
 			printf("\n");
-			printf("MOTOROLA family hexa: Checksum error detected !!!\n");
+			printf("MOTOROLA family hexa: Checksum error (%d) detected !!!\n", checksum_err_cnt);
 
 			AllFilesClosed();
 
@@ -6357,6 +6361,7 @@ int main(int argc, char *argv[])
 	
 		byte	Data_Str[HEX_MAX_LINE_SIZE];
 	
+		checksum_err_cnt = 0;	// 2022.08.03
 
 		Phys_AddrTemp = 0; // added at 2016.03.10
 
@@ -6446,7 +6451,7 @@ int main(int argc, char *argv[])
 					// ---------------------------------
 					if( iErrCount > MAX_ERR_COUNT*2 ) // 2020.06.30
 					{
-						printf("\n\n Too many parsing error.  Check Intel hexa family type!! \n");
+						printf("\n\n Check Intel hexa family type!!!  Maybe MOTOROLA family in this hex file!! \n");
 					
 						iErrCount = 0; // clear
 
@@ -6683,7 +6688,7 @@ int main(int argc, char *argv[])
 					if (verbose) 
 					{
 						ClearScreen();
-						fprintf(stderr,"Line%6d :%d:Unknown Intel record type:%d \n", Record_Nb, Type, Type );
+						fprintf(stderr,"Line%6d :%d:Unknown Intel record type.  Maybe MOTOROLA family type!! \n", Record_Nb, Type );
 					}
 					break;
 				}
@@ -6695,7 +6700,7 @@ int main(int argc, char *argv[])
 		// ---------------------------------
 		if( iErrCount > MAX_ERR_COUNT ) // 2016.03.05
 		{
-			printf("\n\nToo many Intel parsing error.  Check Intel hexa family type!!! \n");
+			printf("\n\nCheck Intel hexa family type!!! \n");
 
 			iErrCount = 0; // clear
 
@@ -6978,7 +6983,7 @@ int main(int argc, char *argv[])
 		if (Status_Checksum_Error && Enable_Checksum_Error)
 		{
 			printf("\n");
-			printf("INTEL family haxa: Checksum error detected !!!\n");
+			printf("INTEL family haxa: Checksum error (%d) detected !!!\n", checksum_err_cnt);
 
 			AllFilesClosed();
 
