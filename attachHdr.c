@@ -6109,12 +6109,12 @@ int main(int argc, char *argv[])
 							// OK !!!!
 							//Checksum = Nb_Bytes + 0x52 + 0x65 + 0x6C + 0x65 + 0x61 + 0x73 + 0x65 + 0x20 + 0x42 + 0x75 + 0x69 + 0x6C + 0x64 + 0x5C + 0x72 + 0x6F + 0x6D + 0x70 + 0x2E + 0x6F + 0x75 + 0x74;
 							//printf("S0 Checksum = %#02x -- OK \n", (255-Checksum) );
-							printf("Line%6d :S0 Checksum is OK \n", Record_Nb );
+							printf("Line %d :S0 Checksum is OK \n", Record_Nb );
 						}
 						else
 						{
 							//fprintf(stderr,"Error in line %d of hex file\n", Record_Nb);
-							printf("Line%6d :S0-Error in selected hex file. shoube be %02x \n", Record_Nb, (255-TempCRCSumVal)&0xFF );
+							printf("Line %d :S0-Error in selected hex file. shoube be %02x \n", Record_Nb, (255-TempCRCSumVal)&0xFF );
 							//printf("[%s]\n", HexaLine );
 						}
 
