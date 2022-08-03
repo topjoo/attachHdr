@@ -6043,10 +6043,11 @@ int main(int argc, char *argv[])
 						unsigned char TempVal=0, TempCRCSumVal=0, TempLenVal=0, TempCRC=0, iCount=0;
 						char szS0tmp[5]={0,}, szS0rectxt[1024]={0,};
 
+
 						memset( szS0rectxt, 0x00, sizeof(szS0rectxt) );
 
 						strcpy( szS0rectxt, "S0-record         : [" );
-						for(iidx=2; HexaLine[iidx] != 0x00 && iidx<1024; iidx+=2 )
+						for(iidx=2; HexaLine[iidx] != 0x00 && iidx<(Nb_Bytes+1)*2; iidx+=2 )
 						{
 							memset( TempC, 0x00, sizeof(TempC) );
 							strncpy( (char*)TempC, (char *)&HexaLine[iidx], 2);
@@ -6056,10 +6057,13 @@ int main(int argc, char *argv[])
 							{
 								TempLenVal = TempVal; // length once saved!
 							}
-							else
+
+							/* ========== checksum loginc ========= */
 							{
 								TempCRCSumVal += TempVal;
 								TempCRCSumVal &= 0xFF;
+
+								//printf("idx(%d) -> %02x -> %02x \n", iidx, TempVal, TempCRCSumVal );
 
 								if( iCount <= TempLenVal )
 								{
@@ -6085,17 +6089,19 @@ int main(int argc, char *argv[])
 									strcat( szS0rectxt, szS0tmp );
 								}
 							}
+							
 						}
 						strcat( szS0rectxt, "]");
 						printf("%s -> ", szS0rectxt );
 
-						
-						TempCRC    = TempVal;  // minus last Checksum 
-						TempCRCSumVal = TempCRCSumVal - TempVal; // minus last Checksum 
-						TempCRCSumVal = TempCRCSumVal + Nb_Bytes;
 
-						// checksum confirm!!
-						if( ((255-TempCRCSumVal)&0xFF) == (TempVal&0xFF) )
+						strncpy( (char*)TempC, (char *)&HexaLine[iidx], 2);
+						TempVal  = str2hex(TempC);
+						TempCRC  = TempVal;
+
+
+						// ========= checksum confirm!!
+						if( ((255-TempCRCSumVal)&0xFF) == (TempCRC&0xFF) )
 						{
 							// OK !!!!
 							//Checksum = Nb_Bytes + 0x52 + 0x65 + 0x6C + 0x65 + 0x61 + 0x73 + 0x65 + 0x20 + 0x42 + 0x75 + 0x69 + 0x6C + 0x64 + 0x5C + 0x72 + 0x6F + 0x6D + 0x70 + 0x2E + 0x6F + 0x75 + 0x74;
@@ -6105,7 +6111,7 @@ int main(int argc, char *argv[])
 						else
 						{
 							//fprintf(stderr,"Error in line %d of hex file\n", Record_Nb);
-							printf("Line%6d :S0-Error in selected hex file. checksum(%x) %x [%x]\n", Record_Nb, (TempCRCSumVal)&0xFF );
+							printf("Line%6d :S0-Error in selected hex file. shoube be %02x \n", Record_Nb, (255-TempCRCSumVal)&0xFF );
 							//printf("[%s]\n", HexaLine );
 						}
 
