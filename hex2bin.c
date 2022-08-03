@@ -630,7 +630,7 @@ bool GetBoolean(const char *str)
 
 void VerifyChecksumValue(unsigned int checksum, unsigned int hexFam)
 {
-	if( hexFam==1 )
+	if( hexFam==1 ) /* INTEL Family */
 	{
 	    if ((Checksum != 0) && Enable_Checksum_Error)
 		{
@@ -642,7 +642,7 @@ void VerifyChecksumValue(unsigned int checksum, unsigned int hexFam)
 			Status_Checksum_Error = true;
 		}
 	}
-	else // if( hexFam==2 )
+	else // if( hexFam==2 ) /* MOTOROLA Family */
 	{
 		if (((checksum + Checksum) != 0xFF) && Enable_Checksum_Error)
 		{

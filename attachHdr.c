@@ -5859,12 +5859,11 @@ int main(int argc, char *argv[])
 		            if (result != 3 && (i>0) ) 
 		            {
 						// fprintf(stderr,"S1:Error in line %d of hex file.\n", Record_Nb);
-						printf("Line%6d :S1-Error in hex file. ", Record_Nb, result );
-						if( result<=0 ) printf("\nCheck Motorola hexa family type!! Maybe INTEL family hex type!\n");
-						else printf("\n");
-						
-						iErrCount ++; // 2016.03.05
+						printf("\nLine%6d :S1-Error in hex file. ", Record_Nb );
+						if( result<=0 ) printf(" Check INTEL family hexa type!!!");
 
+
+						iErrCount ++; // 2016.03.05
 						// ---------------------------------
 						if( iErrCount > MAX_ERR_COUNT*2 ) // 2016.03.05
 						{
@@ -6109,12 +6108,12 @@ int main(int argc, char *argv[])
 							// OK !!!!
 							//Checksum = Nb_Bytes + 0x52 + 0x65 + 0x6C + 0x65 + 0x61 + 0x73 + 0x65 + 0x20 + 0x42 + 0x75 + 0x69 + 0x6C + 0x64 + 0x5C + 0x72 + 0x6F + 0x6D + 0x70 + 0x2E + 0x6F + 0x75 + 0x74;
 							//printf("S0 Checksum = %#02x -- OK \n", (255-Checksum) );
-							printf("Line %d :S0 Checksum is OK \n", Record_Nb );
+							printf("Line #%d :S0 Checksum is OK \n", Record_Nb );
 						}
 						else
 						{
 							//fprintf(stderr,"Error in line %d of hex file\n", Record_Nb);
-							printf("Line %d :S0-Error in selected hex file. shoube be %02x \n", Record_Nb, (255-TempCRCSumVal)&0xFF );
+							printf("Line #%d :S0-Error in selected hex file. This checksum should be 0x%02x \n", Record_Nb, (255-TempCRCSumVal)&0xFF );
 							//printf("[%s]\n", HexaLine );
 						}
 
@@ -6360,7 +6359,7 @@ int main(int argc, char *argv[])
 		unsigned int Type;
 		unsigned int Offset = 0x00;
 		unsigned int temp;
-		unsigned int hexFamily=1; // Intel Family:1, Motorola Family : 2
+		const unsigned int hexFamily=1; // Intel Family:1, Motorola Family : 2
 		
 		/* We will assume that when one type of addressing is selected, it will be valid for all the
 		 current file. Records for the other type will be ignored. */
@@ -6458,7 +6457,7 @@ int main(int argc, char *argv[])
 
 
 					// ---------------------------------
-					if( iErrCount > MAX_ERR_COUNT*2 ) // 2020.06.30
+					if( iErrCount > MAX_ERR_COUNT ) // 2020.06.30
 					{
 						printf("\n\nCheck Intel hexa family type!!!  Maybe MOTOROLA family in this hex file!! \n");
 					
@@ -6790,7 +6789,9 @@ int main(int argc, char *argv[])
 					Address = First_Word;
 	
 					if (Seg_Lin_Select == SEGMENTED_ADDRESS)
+					{
 						Phys_Addr = (Segment << 4) + Address;
+					}
 					else
 					{
 
@@ -6830,13 +6831,12 @@ int main(int argc, char *argv[])
 	
 						/* Read the Checksum value. */
 						result = sscanf (pBin, "%2x",&temp2);
-						if (result != 1) fprintf(stderr,":0:Error in line %d of hex file\n", Record_Nb);
+						if (result != 1) fprintf(stderr,":0:Error in line %d of hex file. \n", Record_Nb);
 	
 						/* Verify Checksum value. */
 						Checksum = (Checksum + temp2) & 0xFF;
 
-
-						VerifyChecksumValue(temp2, hexFamily);
+						VerifyChecksumValue(temp2, hexFamily); /* hexFamily:1 INTEL family*/
 					}
 					else
 					{
@@ -6874,7 +6874,7 @@ int main(int argc, char *argv[])
 						/* Verify Checksum value. */
 						Checksum = (Checksum + (Segment >> 8) + (Segment & 0xFF) + temp2) & 0xFF;
 
-						VerifyChecksumValue((Segment >> 8) + (Segment & 0xFF) + temp2, hexFamily);
+						VerifyChecksumValue((Segment >> 8) + (Segment & 0xFF) + temp2, hexFamily);  /* hexFamily:1 INTEL family*/
 
 					}
 					break;
@@ -6931,6 +6931,8 @@ int main(int argc, char *argv[])
 						/* Verify Checksum value. */
 						Checksum = (Checksum + (Upper_Address >> 8) + (Upper_Address & 0xFF) + temp2) & 0xFF;
 
+						VerifyChecksumValue( temp2, hexFamily); /* hexFamily:1 INTEL family*/
+
 					#if HEX2BIN_INTEL_ZERO_FORCED // 2020.06.29
 						// ----------------------------------------
 						// Hex Address Zero based converted 
@@ -6938,10 +6940,13 @@ int main(int argc, char *argv[])
 						if( HEX2BIN_ZERO_FORCED==Enable_HexaAddr_Zero_Forced )
 						{
 							Checksum = (Checksum + (Phys_AddrTemp >> 8) + (Phys_AddrTemp & 0xFF) ) & 0xFF;							
+
+							fprintf(stderr,"[+FORCED+]");
+							VerifyChecksumValue( (Phys_AddrTemp >> 8) + (Phys_AddrTemp & 0xFF), hexFamily); /* hexFamily:1 INTEL family*/
 						}
 					#endif
 
-						VerifyChecksumValue( (Phys_AddrTemp >> 8) + (Phys_AddrTemp & 0xFF), hexFamily);
+
 
 					}
 					break;
