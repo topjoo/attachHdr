@@ -5859,13 +5859,13 @@ int main(int argc, char *argv[])
 		            if (result != 3 && (i>0) ) 
 		            {
 						// fprintf(stderr,"S1:Error in line %d of hex file.\n", Record_Nb);
-						printf("Line%6d :S1-Error in hex file. (%d) \n", Record_Nb, result );
+						printf("Line%6d :S1-Error in hex file. (result: %d) \n", Record_Nb, result );
 						iErrCount ++; // 2016.03.05
 
 						// ---------------------------------
 						if( iErrCount > MAX_ERR_COUNT*2 ) // 2016.03.05
 						{
-							printf("\n\n Too many parsing error.  Check Motorola hexa family type!! \n");
+							printf("\n\nCheck Motorola hexa family type!! Maybe INTEL family hex type!\n");
 						
 							iErrCount = 0; // clear
 							AllFilesClosed();
@@ -5978,7 +5978,7 @@ int main(int argc, char *argv[])
 		// ---------------------------------
 		if( iErrCount > MAX_ERR_COUNT ) // 2016.03.05
 		{
-			printf("\n\nToo many MOTOROLA parsing error.  Check Motorola hexa type!!! \n");
+			printf("\n\nCheck Motorola hexa type!!! Maybe INTEL family hex type!! \n");
 
 			iErrCount = 0; // clear
 
@@ -6100,12 +6100,12 @@ int main(int argc, char *argv[])
 							// OK !!!!
 							//Checksum = Nb_Bytes + 0x52 + 0x65 + 0x6C + 0x65 + 0x61 + 0x73 + 0x65 + 0x20 + 0x42 + 0x75 + 0x69 + 0x6C + 0x64 + 0x5C + 0x72 + 0x6F + 0x6D + 0x70 + 0x2E + 0x6F + 0x75 + 0x74;
 							//printf("S0 Checksum = %#02x -- OK \n", (255-Checksum) );
-							printf("S0 Checksum is OK \n");
+							printf("Line%6d :S0 Checksum is OK \n", Record_Nb );
 						}
 						else
 						{
 							//fprintf(stderr,"Error in line %d of hex file\n", Record_Nb);
-							printf("Line%6d :S0-Error in selected hex file. checksum(%x) \n", Record_Nb, TempCRC );
+							printf("Line%6d :S0-Error in selected hex file. checksum(%x) %x [%x]\n", Record_Nb, (TempCRCSumVal)&0xFF );
 							//printf("[%s]\n", HexaLine );
 						}
 
@@ -6700,7 +6700,7 @@ int main(int argc, char *argv[])
 		// ---------------------------------
 		if( iErrCount > MAX_ERR_COUNT ) // 2016.03.05
 		{
-			printf("\n\nCheck Intel hexa family type!!! \n");
+			printf("\n\nCheck Intel hexa family type!!! Maybe MOTOROLA family hex type!!\n");
 
 			iErrCount = 0; // clear
 
