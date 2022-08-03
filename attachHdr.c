@@ -5859,7 +5859,10 @@ int main(int argc, char *argv[])
 		            if (result != 3 && (i>0) ) 
 		            {
 						// fprintf(stderr,"S1:Error in line %d of hex file.\n", Record_Nb);
-						printf("Line%6d :S1-Error in hex file. (result: %d) \n", Record_Nb, result );
+						printf("Line%6d :S1-Error in hex file. ", Record_Nb, result );
+						if( result<=0 ) printf("\nCheck Motorola hexa family type!! Maybe INTEL family hex type!\n");
+						else printf("\n");
+						
 						iErrCount ++; // 2016.03.05
 
 						// ---------------------------------
