@@ -6659,7 +6659,8 @@ int main(int argc, char *argv[])
 									Phys_AddrTemp = Phys_Addr;
 									Upper_Address = 0x0000;
 									
-									printf("Line%6d :%d:Upper_Address: 0x%X to zero-based addr: 0x%X \n", Record_Nb, Type, Phys_AddrTemp, Upper_Address );
+									printf("Line%6d :%06d:Upper_Address: 0x%X to zero-based addr: 0x%X \n", Record_Nb, Type, Phys_AddrTemp, Upper_Address );
+									printf("                   Parsig on the rebased address: 0x00000000.\n");
 								}
 							}
 
@@ -6931,7 +6932,7 @@ int main(int argc, char *argv[])
 						/* Verify Checksum value. */
 						Checksum = (Checksum + (Upper_Address >> 8) + (Upper_Address & 0xFF) + temp2) & 0xFF;
 
-						VerifyChecksumValue( temp2, hexFamily); /* hexFamily:1 INTEL family*/
+						//VerifyChecksumValue( temp2, hexFamily); /* hexFamily:1 INTEL family*/
 
 					#if HEX2BIN_INTEL_ZERO_FORCED // 2020.06.29
 						// ----------------------------------------
@@ -6941,8 +6942,13 @@ int main(int argc, char *argv[])
 						{
 							Checksum = (Checksum + (Phys_AddrTemp >> 8) + (Phys_AddrTemp & 0xFF) ) & 0xFF;							
 
-							fprintf(stderr,"[+FORCED+]");
-							VerifyChecksumValue( (Phys_AddrTemp >> 8) + (Phys_AddrTemp & 0xFF), hexFamily); /* hexFamily:1 INTEL family*/
+							//fprintf(stderr,"[+FORCED+1+]");
+							//VerifyChecksumValue( (Phys_AddrTemp >> 8) + (Phys_AddrTemp & 0xFF), hexFamily); /* hexFamily:1 INTEL family*/
+							VerifyChecksumValue( Checksum, hexFamily); /* hexFamily:1 INTEL family*/
+						}
+						else
+						{
+							VerifyChecksumValue( temp2, hexFamily); /* hexFamily:1 INTEL family*/
 						}
 					#endif
 
