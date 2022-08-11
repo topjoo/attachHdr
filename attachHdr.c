@@ -5894,6 +5894,20 @@ int main(int argc, char *argv[])
 						//fprintf(stderr,"S2:Error in line %d of hex file.\n", Record_Nb);
 						printf("Line%6d :S2-Error in hex file. (%d) \n", Record_Nb, result );
 						iErrCount ++; // 2016.03.05
+
+						// ---------------------------------
+						if( iErrCount > MAX_ERR_COUNT*2 ) // 2022.08.05
+						{
+							printf("\n\nCheck Motorola hexa family type!! Maybe INTEL family hexa type!!\n");
+						
+							iErrCount = 0; // clear
+							AllFilesClosed();
+						
+							exit(0);
+							return 1;
+						}
+						// ---------------------------------
+
 		            }
 				
 					/* Adjust Nb_Bytes for the number of data bytes */
@@ -5911,6 +5925,20 @@ int main(int argc, char *argv[])
 						//fprintf(stderr,"S3:Error in line %d of hex file.\n", Record_Nb);
 						printf("Line%6d :S3-Error in hex file. (%d) \n", Record_Nb, result );
 						iErrCount ++; // 2016.03.05
+
+						// ---------------------------------
+						if( iErrCount > MAX_ERR_COUNT*2 ) // 2022.08.05
+						{
+							printf("\n\nCheck Motorola hexa family type!! Maybe INTEL family hexa type!!!\n");
+						
+							iErrCount = 0; // clear
+							AllFilesClosed();
+						
+							exit(0);
+							return 1;
+						}
+						// ---------------------------------
+
 		            }
 				
 					/* Adjust Nb_Bytes for the number of data bytes */
