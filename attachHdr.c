@@ -6660,7 +6660,7 @@ int main(int argc, char *argv[])
 									Upper_Address = 0x0000;
 									
 									printf("Line%6d :%06d:Upper_Address: 0x%X to zero-based addr: 0x%X \n", Record_Nb, Type, Phys_AddrTemp, Upper_Address );
-									printf("                   Parsig on the rebased address: 0x00000000.\n");
+									printf("                   Parsig on the rebased address: 0x%X from 0x%X.\n", Upper_Address, Phys_AddrTemp);
 								}
 							}
 
@@ -6950,6 +6950,10 @@ int main(int argc, char *argv[])
 						{
 							VerifyChecksumValue( temp2, hexFamily); /* hexFamily:1 INTEL family*/
 						}
+					#else
+
+						VerifyChecksumValue( temp2, hexFamily); /* hexFamily:1 INTEL family*/
+
 					#endif
 
 
