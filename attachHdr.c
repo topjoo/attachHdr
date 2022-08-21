@@ -6008,7 +6008,7 @@ int main(int argc, char *argv[])
 		// ---------------------------------
 		if( iErrCount > MAX_ERR_COUNT ) // 2016.03.05
 		{
-			printf("\n\nCheck Motorola hexa type!!! Maybe INTEL family hex type!! \n");
+			printf("\n\nCheck Motorola hexa type!!! Maybe INTEL family hexa type!! \n");
 
 			iErrCount = 0; // clear
 
@@ -6231,7 +6231,7 @@ int main(int argc, char *argv[])
 				case 3:
 					if (Nb_Bytes == 0)
 					{
-						fprintf(stderr,"0 byte length Data record ignored\n");
+						fprintf(stderr,"zero byte length Data record is ignored.\n");
 						break;
 					}
 	
@@ -6300,15 +6300,15 @@ int main(int argc, char *argv[])
 				Record_Checksum &= 0xFF;
 	
 				/* Verify Checksum value. */
-				#if 1
+			#if 1
 				VerifyChecksumValue(Record_Checksum, hexFamily); /* hexFamily:2 MOTOROLA family*/
-				#else
+			#else
 				if (((Record_Checksum + Checksum) != 0xFF) && Enable_Checksum_Error)
 				{
 					printf("Line%6d ::Checksum error: should be 0x%02x, not be 0x%02x. \n",Record_Nb, 255-Checksum, Record_Checksum); ///, HexaLine);
 					Status_Checksum_Error = true;
 				}
-				#endif
+			#endif
 			}
 		}
 		while (!feof (inpfile));
@@ -6345,7 +6345,7 @@ int main(int argc, char *argv[])
 		if (Status_Checksum_Error && Enable_Checksum_Error)
 		{
 			printf("\n");
-			printf("MOTOROLA family hexa: Checksum error (%d) detected !!!\n", checksum_err_cnt);
+			printf("MOTOROLA family hexa: Checksum error (%d) is detected !!!\n", checksum_err_cnt);
 
 			AllFilesClosed();
 

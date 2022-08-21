@@ -40,7 +40,7 @@
 
 
 
-char Attversion[] = "3.1.6"; /* ver 3.1.5 : 2022.08.10 : Hex2bin checksum error display and fix */
+char Attversion[] = "3.1.7"; /* ver 3.1.5 : 2022.08.10 : Hex2bin checksum error display and fix */
 char EmailText[]  = "tp.joo@daum.net";
 
 
