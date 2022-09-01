@@ -548,6 +548,15 @@ void help(void)
            "     ah.exe --join 0x2800 --endian big    -i STM_mcu_Boot.bin  STM_mcu_302K8_App.bin -o STM_mcu_TotalQD21.bin \n"
            "\n"
 
+           "--[ Files Encapsulation/Extract ]------- -------------------------------------------------------------------------\n"
+           "  -y or --merge [1st file 2nd file .....] Specify the file lists to be merging to 1 file. \n"
+           "  -x or --extract [filename]              Specify the merged file name. \n"
+           "\n"
+           " Ex) ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --model BLTNCAM --version CI02-02 --output total.bin \n"
+           "     ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --version CI02-02 --output total.bin \n"
+           "     ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --output total.bin \n"
+           "     ah.exe --extract total.bin \n"
+           "\n"
 	#if MODIFIED_JULIAN_DATE 
            "--[ MJD (Modified Julian Date) ]-------- -------------------------------------------------------------------------\n"
            "  -J or --mjd test                        Modified JD test and create test-file.\n" 
