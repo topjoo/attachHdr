@@ -734,6 +734,34 @@ int main(int argc, char *argv[])
 	unsigned int titlen=0;
 	int 	isLength = 0;
 
+	// index file merged
+	int istartIdx=-1, iEndIdx=0, iTotcnt=0;
+
+	//char mergefile[50][128];
+#define MERGE_TOTAL_CNT 			16
+#define MERGE_INDEX_SIZ 			6 // 16
+#define MERGE_DATE_SIZ 				26 // 32
+#define MERGE_FILE_SIZ 				16
+#define MERGE_FILENAME_LENGTH 		64
+#define MERGE_SHA256_SIZ 			64
+
+
+	typedef struct {
+		int  mergeIndex;
+		char mergeDate[MERGE_DATE_SIZ];
+		char mergeFileName[MERGE_FILENAME_LENGTH];
+		int  mergeSize;
+		char mergeSHA256[MERGE_SHA256_SIZ];
+	} _mergeFiles ;
+
+	char mergeTotIndex[MERGE_TOTAL_CNT];
+	char mergeTxtIndex[MERGE_INDEX_SIZ];
+	char mergeTxtSize[MERGE_FILE_SIZ];
+	
+	_mergeFiles mFile[50];
+	struct _finddata_t mergeInfo;
+
+	
 	uint32_t crc32_ctab[CRC32_TAB_SIZE] = {0,};
 
 	const char WeekTXT[][3+1] = {
@@ -756,6 +784,7 @@ int main(int argc, char *argv[])
 	int isJoin=0; // --join option
 
 	int isFileMerge=0; // 2017.12.11
+	int ismultiFilesMerge=0;
 	int is2ndFileSize=0;
 	int is2ndEndian=0; // 1:little, 2:big endian
 	int isAttach = 0;
@@ -880,7 +909,7 @@ int main(int argc, char *argv[])
 	static int verbose_flag;
 
 	//static char strOpt[] = "gALz:h:b:m:v:i:o:a:cd:F:I:N:S:k:f:B:M:J:l:e";
-	static char strOpt[] = "g:ALz:h:b:m:v:i:o:a:c:d:F:I:N:S:f:B:M:J:l:ej:nE:P:kZR:"; // 2020.06.26
+	static char strOpt[] = "g:ALz:h:b:m:v:i:o:a:c:d:F:I:N:S:f:B:M:J:l:ej:nE:P:kZR:y:"; // 2020.06.26
 
 	static struct option long_options[] =
 	{
@@ -911,7 +940,7 @@ int main(int argc, char *argv[])
 		{"version", 	required_argument, 0, 'v'}, /// Attach Header : Version Name (16byte)
 	//	{"file",		required_argument, 0, 'w'},
 	//	{"file",		required_argument, 0, 'x'},
-	//	{"file",		required_argument, 0, 'y'},
+		{"merge",		required_argument, 0, 'y'}, /// file merged
 		{"verbose",		required_argument, 0, 'z'}, /// verbos --
 	
 		/// ------------------------------------------------------------------------------
@@ -2230,6 +2259,56 @@ int main(int argc, char *argv[])
 
 		    	break;
 
+			case 'y':
+				{
+				int ii=0, reidx=0;
+				
+					// --------------------------------------------------------------------
+					iTotcnt = argc;
+					do {
+						if( strcmp( argv[ii], "--merge" ) == 0 )
+						{
+							//++printf("\n>> ii    : (%s) [%d] iTotcnt=%d \n", argv[ii], ii, iTotcnt );
+							istartIdx = ii;
+							break;
+						}	
+					} while( ii++ < iTotcnt);
+
+					if( istartIdx == -1 ) 
+					{
+						printf(">> check please --merge option!!\n" );
+						break;
+					}
+
+					ii++;
+					do {
+						if( (strncmp( argv[ii], "--", 2 ) == 0) || (strncmp( argv[ii], "-", 1 ) == 0) )
+						{
+							//++printf(">> iEndIdx    : (%s) [%d] \n", argv[ii], ii );
+							iEndIdx = ii;
+							break;
+						}						
+					} while( ii++ < iTotcnt);
+
+					
+					memset( mFile, 0x00, sizeof(mFile) );
+					//memset(mergefile, 0x00, sizeof(mergefile) );
+
+					printf("\n>>Merging input file lists: \n");
+					for(reidx=1, ii=istartIdx+1; ii<iEndIdx; ii++, reidx++)
+					{
+						memset( mFile[reidx].mergeFileName, 0x00, sizeof(mFile[reidx].mergeFileName) );
+						strcpy( mFile[reidx].mergeFileName, argv[ii] );
+						printf("%2d -> filename: [%s] \n", reidx, mFile[reidx].mergeFileName );
+					}
+
+					ismultiFilesMerge = 1;
+					// --------------------------------------------------------------------
+
+				}
+				break;
+
+					
 			case 'j': /* 2017.04.05, File merge */
 
 				if(optarg) 
@@ -3201,7 +3280,7 @@ int main(int argc, char *argv[])
 		// input file is ignored
 		if(verbose==TRUE) LOG_ERR("\n\n[INPUT] Input file is ignored.");
 	}	
-	else if( multifileindex > 0 || (ASTERISK_FOUND==isAsteMode) || (1==isIgnoreBothFile && 1==isFloat2Hex) ) /// input files---
+	else if( multifileindex > 0 || (ASTERISK_FOUND==isAsteMode) || (1==isIgnoreBothFile && 1==isFloat2Hex) || (1==ismultiFilesMerge) ) /// input files ignored---
 	{
 		/// MD5 / SHA1 Checksum 에서만 사용한다...
 		/// printf("There are input file...\n");
@@ -3421,7 +3500,7 @@ int main(int argc, char *argv[])
 				if( NULL == (outfile = fopen( outfile_name, "wb"))  )	
 				{
 					// FAIL
-					printf("\n\nCan not create folder & output file. [%s / %s] - (write mode) \n", szDir, outfile_name);
+					printf("\n\n[++ERROR++]Can NOT create folder & output file. [%s / %s] - (write mode) \n", szDir, outfile_name);
 					if( NULL == outfile_name || outfile_name[0] == 0x00 )
 						printf("Need an output file option (--output or --append) for saving output.\n" );
 
@@ -3429,7 +3508,7 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				printf("\n\nCan not create output file. [%s] - (write mode) \n", outfile_name);
+				printf("\n\n[++ERROR++]Can NOT create output file. [%s] - (write mode) \n", outfile_name);
 				if( NULL == outfile_name || outfile_name[0] == 0x00 )
 					printf("Need an output file option (--output or --append) for saving output.\n" );
 			}
@@ -4755,7 +4834,7 @@ int main(int argc, char *argv[])
 			if( NULL == (inpfile = fopen( infile_name, "rb")) ) 
 			{
 				beep(700,100);
-				printf("\n\n[++ERROR++] Can not open input file[%s]. \n",infile_name);
+				printf("\n\n[++ERROR++] Can not open input file[%s] \n",infile_name);
 				if( NULL == infile_name || infile_name[0] == 0x00)
 					printf("[++ERROR++] Must be input file with -i or --input option. \n" );
 			
@@ -12710,6 +12789,295 @@ int main(int argc, char *argv[])
 	}
 #endif /// MODIFIED_JULIAN_DATE
 
+	else if( (1==ismultiFilesMerge) )
+	{
+	int fileNum = iEndIdx-istartIdx;
+	int ii=1, i=0, length=0;
+	long 	attFile;
+
+	unsigned __int64	kll=0UL, ll=0UL;
+	SHA256_CTX		ctx256;
+	unsigned char	sha256_buf[SHA2_BUFLEN];
+	int iLenSub=0;
+
+
+		//==1== Total Counter
+		printf("\n>>Total merged file count : %d \n",  fileNum-1) ;
+		memset(mergeTotIndex, 0x00, sizeof(mergeTotIndex) );
+		sprintf(mergeTotIndex,"%d",fileNum-1 );
+		
+		for(i=0; i<MERGE_TOTAL_CNT; i++)
+		{ if( ('\n' == mergeTotIndex[i]) || ('\r' == mergeTotIndex[i]) || (0x20 == mergeTotIndex[i]) ) mergeTotIndex[i] = 0x00; }
+
+		// ----------------------------------------------------
+		// sub store-0 : Total File Counter		
+		if(outfile) 
+		{
+			fprintf(outfile,"%s", mergeTotIndex );
+		}
+		length = strlen(mergeTotIndex);
+		while( length < MERGE_TOTAL_CNT )
+		{
+			if(outfile) fprintf(outfile,"%c",SPACE_FILL1);
+			length++;
+		}		
+		// ----------------------------------------------------
+
+
+		// ================= MODEL NAME ====================================
+		if( ATT_MODEL == (isAttach&ATT_MODEL) )
+		{
+			/* ++++++++ MODEL NAME +++++++++++++++++++++++++++ */
+			/* step2 : Model name (16 characters) */
+			/* +++++++++++++++++++++++++++++++++++++++++++++++ */
+			len_module_name = strlen(str_moduleName);
+			if( len_module_name < MAX_CHARS )
+			{
+				if( len_module_name == 0 ) 
+				{ 
+					memcpy(str_moduleName, DUMMY_FILL, DUMMY_FILL_LEN); 
+					len_module_name=DUMMY_FILL_LEN; 
+				}
+				if(outfile) fprintf(outfile,"%s", str_moduleName);
+				while( len_module_name < MAX_CHARS )
+				{
+					if(outfile) fprintf(outfile,"%c",SPACE_FILL2);
+					len_module_name++;
+				}
+			}
+			else
+			{
+				count=0;
+				while( count < MAX_CHARS )
+				{
+					if(outfile) fprintf(outfile,"%c",str_moduleName[count] );
+					count++;
+				}
+			}
+		}
+
+
+		// ================= VERSION NAME ====================================
+		if( ATT_VERSION == (isAttach&ATT_VERSION) )
+		{
+
+			// --------------------------------------------------
+			/* ++++++++ VERSION NAME +++++++++++++++++++++++++++ */
+			/* step4 : Version name (16 characters) -> 
+			   step3 : Version name 32 Bytes : 2017.11.21 */
+			/* +++++++++++++++++++++++++++++++++++++++++++++++ */
+			len_version_name = strlen(str_versionName);
+			if( len_version_name < MAX_VERSION_LEN )
+			{
+				if( len_version_name == 0 ) 
+				{ 
+					memcpy(str_versionName, DUMMY_FILL, DUMMY_FILL_LEN); 
+					len_version_name = DUMMY_FILL_LEN; 
+				}
+				if(outfile) fprintf(outfile,"%s", str_versionName);
+				while( len_version_name < MAX_VERSION_LEN )
+				{
+					if(outfile) fprintf(outfile,"%c",SPACE_FILL4);
+					len_version_name++;
+				}
+			}
+			else
+			{
+				count=0;
+				while( count < MAX_VERSION_LEN )
+				{
+					if(outfile) fprintf(outfile,"%c",str_versionName[count] );
+					count++;
+				}
+			}
+
+		}
+
+
+		
+
+		//==2== File List-up (Date/Size) and Index
+		for(ii=1; ii<fileNum; ii++)
+		{
+
+			if( (attFile = _findfirst( mFile[ii].mergeFileName, &mergeInfo )) == -1L )
+			{
+				printf( "No files in current directory!! (%d)-[%s] \n", ii, mFile[ii].mergeFileName );
+			}
+			else
+			{
+				if( !(mergeInfo.attrib & _A_SUBDIR) )
+				{
+					mFile[ii].mergeIndex = ii;
+					mFile[ii].mergeSize = mergeInfo.size;
+					memset(mFile[ii].mergeDate, 0x00, sizeof(mFile[ii].mergeDate) );
+					strncpy(mFile[ii].mergeDate, ctime( &( mergeInfo.time_write )), 24 );
+
+					//printf( "[%d] => [%s] [%s] [%s], Size: %ld bytes \n", ii, mFile[ii].mergeFileName, mergeInfo.name, mFile[ii].mergeDate, mergeInfo.size );
+				}
+			}
+
+			_findclose( attFile );
+		}
+
+
+		//==3== SHA2 ----
+		printf("SHA2>> SHA-256 hashing for encapsulating files... \n");
+		for(ii=1; ii<fileNum; ii++)
+		{
+
+			if( NULL == (inpfile = fopen( mFile[ii].mergeFileName, "rb")) ) 
+			{
+				printf("--merge option error, files not found!! [%s] \n", mFile[ii].mergeFileName );
+				//AllFilesClosed();
+				//exit(0); /// help();
+				//return 0;
+			}
+
+			/// initial
+			memset( &ctx256, 0x00, sizeof(SHA256_CTX) );
+			memset( sha256_buf, 0x00, sizeof(sha256_buf) );
+
+			/// SHA2 Calculate ----
+			SHA256_Init(&ctx256);
+
+			kll = 0UL;
+			printf("Waiting for SHA256**[%s]... \r", mFile[ii].mergeFileName);
+			while((ll = fread(sha256_buf, 1, SHA2_BUFLEN, inpfile)) > 0) 
+			{
+				kll += ll;
+				SHA256_Update(&ctx256, (unsigned char*)sha256_buf, ll);
+			}
+			SHA256_End(&ctx256, sha256_buf);
+
+			memset(mFile[ii].mergeSHA256, 0x00, sizeof(mFile[ii].mergeSHA256) );
+			strcpy(mFile[ii].mergeSHA256, sha256_buf );
+
+			printf("\r");
+			printf("%2d -> %s  *SHA256*%s [%s] / %ld Bytes \n", ii, mFile[ii].mergeSHA256, mFile[ii].mergeFileName, mFile[ii].mergeDate, mFile[ii].mergeSize );
+
+
+			if(outfile) 
+			{
+
+				// --------------------------------------------------------
+				// sub store-1: Index Number
+				memset(mergeTxtIndex, 0x00, sizeof(mergeTxtIndex) );
+				sprintf(mergeTxtIndex,"%d",ii );
+				fprintf(outfile,"%s", mergeTxtIndex);
+				
+				length = strlen(mergeTxtIndex);
+				while( length < MERGE_INDEX_SIZ )
+				{
+					if(outfile) fprintf(outfile,"%c",SPACE_FILL1);
+					length++;
+				}
+				// --------------------------------------------------------
+
+				// --------------------------------------------------------
+				// sub store-2: File Date
+				fprintf(outfile,"%s", mFile[ii].mergeDate );
+				length = strlen(mFile[ii].mergeDate);
+				while( length < MERGE_DATE_SIZ )
+				{
+					if(outfile) fprintf(outfile,"%c",SPACE_FILL1);
+					length++;
+				}
+
+
+				// --------------------------------------------------------
+				// sub store-3: File Name
+				fprintf(outfile,"%s", mFile[ii].mergeFileName );
+				length = strlen(mFile[ii].mergeFileName);
+				while( length < MERGE_FILENAME_LENGTH )
+				{
+					if(outfile) fprintf(outfile,"%c",SPACE_FILL1);
+					length++;
+				}
+				// --------------------------------------------------------
+
+
+				// --------------------------------------------------------
+				// sub store-4: File Size
+				memset(mergeTxtSize, 0x00, sizeof(mergeTxtSize) );
+				itoa(mFile[ii].mergeSize, mergeTxtSize, 10 );
+				fprintf(outfile,"%s", mergeTxtSize );
+				length = strlen(mergeTxtSize);
+				while( length < MERGE_FILE_SIZ )
+				{
+					if(outfile) fprintf(outfile,"%c",SPACE_FILL1);
+					length++;
+				}
+				// --------------------------------------------------------
+
+				// sub store-5: Hash Code SHA256 (64bytes) for specific file
+				fprintf(outfile,"%s", mFile[ii].mergeSHA256 );
+				length = strlen(mFile[ii].mergeSHA256);
+				while( length < MERGE_SHA256_SIZ )
+				{
+					if(outfile) fprintf(outfile,"%c",SPACE_FILL1);
+					length++;
+				}
+				// --------------------------------------------------------
+
+
+			}
+
+			fclose(inpfile);
+
+
+		}
+
+
+		//==4 step== FILE Merging ----
+		if(outfile) 
+		{
+			size_t	fr_size;
+			size_t	tot_size = 0L;
+			unsigned char read_buf[RD_BUF_SIZ] = {0,};
+			
+
+			printf("Encapulating...\n");
+			for(ii=1; ii<fileNum; ii++)
+			{
+			
+				printf("%2d -> [%s / %ld Bytes] to output [%s / ", ii, mFile[ii].mergeFileName, mFile[ii].mergeSize, outfile_name );
+				if( NULL == (inpfile = fopen( mFile[ii].mergeFileName, "rb")) ) 
+				{
+					printf("--merge option error2, files not found!! [%s] \n", mFile[ii].mergeFileName );
+					//AllFilesClosed();
+					//exit(0); /// help();
+					//return 0;
+				}
+
+				memset( read_buf, 0x00, sizeof(read_buf) ); /// initial
+				while( fr_size = fread(read_buf, sizeof(unsigned char), BUFSIZE, inpfile ) )
+				{
+					fwrite(read_buf, sizeof(unsigned char), fr_size, outfile); 
+					tot_size += fr_size;
+				}
+
+				printf("%ld Bytes] ... \n", tot_size );
+
+				if(inpfile) { fclose(inpfile); inpfile=NULL; }
+
+			}
+
+			if(outfile) fclose(outfile);
+			printf("\n>>Output file     : %s (%s)", outfile_name, (isAppend==1)? "append":"new create");
+			printf("\n>>Merge Completed...\n");
+
+		}
+		else
+		{
+			printf("\n\n[++ERROR++] Can NOT Encapulating... check plz.....\n\n");
+		}
+
+		if(outfile) fclose(outfile);
+
+		
+	}
+
 	else if( (1==isFileMerge) && (3==isJoin) ) // 2017.04.05
 	{
 
@@ -12939,7 +13307,7 @@ int main(int argc, char *argv[])
 			if( NULL == (inpfile = fopen( sefile_name, "rb")) ) 
 			{
 				beep(700,100);
-				printf("\n\n[++ERROR++] Can not open input file[%s]. \n",sefile_name);
+				printf("\n\n[++ERROR++] Can not open input file [%s]. \n",sefile_name);
 
 				AllFilesClosed();
 
