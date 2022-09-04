@@ -549,12 +549,13 @@ void help(void)
            "\n"
 
            "--[ Files Encapsulation/Extract ]------- -------------------------------------------------------------------------\n"
-           "  -y or --merge [1st file 2nd file .....] Specify the file lists to be merging to 1 file. \n"
-           "  -x or --extract [filename]              Specify the merged file name. \n"
+           "  -y or --merge [1st file 2nd file .....] Specify the file lists to be merging to 1 file. Max count is 100 files.\n"
+           "  -x or --extract [filename]              Specify the merged file name (upto 100 files). \n"
            "\n"
            " Ex) ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --model BLTNCAM --version CI02-02 --output total.bin \n"
+           "     ah.exe --model BLTNCAM --version CI02-02 --merge a100.bin a200.bin b300.bin c400.bin c600.bin --output total.bin \n"
            "     ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --version CI02-02 --output total.bin \n"
-           "     ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --output total.bin \n"
+           "     ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --output total.bin \n\n"
            "     ah.exe --extract total.bin \n"
            "\n"
 	#if MODIFIED_JULIAN_DATE 
@@ -753,7 +754,7 @@ int main(int argc, char *argv[])
 #define MERGE_FILE_SIZ 				16
 #define MERGE_FILENAME_LENGTH 		64
 #define MERGE_SHA256_SIZ 			64
-
+#define MERGE_MAX_FILES 			101
 
 	typedef struct {
 		int  mergeIndex;
@@ -766,9 +767,29 @@ int main(int argc, char *argv[])
 	char mergeTotIndex[MERGE_TOTAL_CNT];
 	char mergeTxtIndex[MERGE_INDEX_SIZ];
 	char mergeTxtSize[MERGE_FILE_SIZ];
+	char extractFile[MAX_FILENAME_LEN];
 	
-	_mergeFiles mFile[50];
+	_mergeFiles mFile[MERGE_MAX_FILES];
 	struct _finddata_t mergeInfo;
+
+// ======================================================================
+#pragma pack(push, 1)                /* 구조체를 1바이트 크기로 정렬 */
+
+	typedef struct {
+		char mergeTxtIndex[MERGE_INDEX_SIZ];
+		char mergeDate[MERGE_DATE_SIZ];
+		char mergeFileName[MERGE_FILENAME_LENGTH];
+		char mergeTxtSize[MERGE_FILE_SIZ];
+		char mergeSHA256[MERGE_SHA256_SIZ+1];
+	} _extractFiles ;
+
+	_extractFiles  exFileInfo[MERGE_MAX_FILES];
+
+#pragma pack(pop)
+
+	char strExtract[1024+1];
+// ======================================================================
+
 
 	
 	uint32_t crc32_ctab[CRC32_TAB_SIZE] = {0,};
@@ -793,7 +814,10 @@ int main(int argc, char *argv[])
 	int isJoin=0; // --join option
 
 	int isFileMerge=0; // 2017.12.11
-	int ismultiFilesMerge=0;
+
+	int ismultiFilesMerge=0; // 2022.09.02
+	int ismultiFilesExtract=0; // 2022.09.02
+	
 	int is2ndFileSize=0;
 	int is2ndEndian=0; // 1:little, 2:big endian
 	int isAttach = 0;
@@ -918,7 +942,7 @@ int main(int argc, char *argv[])
 	static int verbose_flag;
 
 	//static char strOpt[] = "gALz:h:b:m:v:i:o:a:cd:F:I:N:S:k:f:B:M:J:l:e";
-	static char strOpt[] = "g:ALz:h:b:m:v:i:o:a:c:d:F:I:N:S:f:B:M:J:l:ej:nE:P:kZR:y:"; // 2020.06.26
+	static char strOpt[] = "g:ALz:h:b:m:v:i:o:a:c:d:F:I:N:S:f:B:M:J:l:ej:nE:P:kZR:y:x:"; // 2022.09.04
 
 	static struct option long_options[] =
 	{
@@ -948,7 +972,7 @@ int main(int argc, char *argv[])
 	//	{"file",		required_argument, 0, 'u'},
 		{"version", 	required_argument, 0, 'v'}, /// Attach Header : Version Name (16byte)
 	//	{"file",		required_argument, 0, 'w'},
-	//	{"file",		required_argument, 0, 'x'},
+		{"extract",		required_argument, 0, 'x'},
 		{"merge",		required_argument, 0, 'y'}, /// file merged
 		{"verbose",		required_argument, 0, 'z'}, /// verbos --
 	
@@ -2317,6 +2341,33 @@ int main(int argc, char *argv[])
 				}
 				break;
 
+			// extract =============================
+			case 'x':
+				{
+				int ii=0, reidx=0;
+
+					if(optarg) 
+					{
+	
+						memcpy(extractFile, optarg, MAX_FILENAME_LEN);
+						olen = strlen(extractFile);
+	
+						printf("\n>>Merged filename : %s ", extractFile );
+
+						if( NULL == (inpfile = fopen( extractFile, "rb")) ) 
+						{
+							printf("\n--extract option error, files not found!! [%s] \n", extractFile );
+							AllFilesClosed();
+							exit(0); /// help();
+							return 0;
+						}
+						fclose(inpfile);
+	
+						ismultiFilesExtract = 1;
+					}
+				
+				}
+				break;
 					
 			case 'j': /* 2017.04.05, File merge */
 
@@ -3289,7 +3340,7 @@ int main(int argc, char *argv[])
 		// input file is ignored
 		if(verbose==TRUE) LOG_ERR("\n\n[INPUT] Input file is ignored.");
 	}	
-	else if( multifileindex > 0 || (ASTERISK_FOUND==isAsteMode) || (1==isIgnoreBothFile && 1==isFloat2Hex) || (1==ismultiFilesMerge) ) /// input files ignored---
+	else if( multifileindex > 0 || (ASTERISK_FOUND==isAsteMode) || (1==isIgnoreBothFile && 1==isFloat2Hex) || (1==ismultiFilesMerge) || (1==ismultiFilesExtract) ) /// input files ignored---
 	{
 		/// MD5 / SHA1 Checksum 에서만 사용한다...
 		/// printf("There are input file...\n");
@@ -3350,13 +3401,17 @@ int main(int argc, char *argv[])
 	}
 	else if(1==isIgnoreBothFile)
 	{
-		if(verbose==TRUE) LOG_ERR("\n\n[OUTPUT] isIgnoreBothFile is TRUE ");
+		if(verbose==TRUE) LOG_ERR("\n\n[OUTPUT] isIgnoreBothFile is TRUE. ");
 		// input and output BOTH files are ignored
 	}
 	else if(1==isIgnoreOuFile)
 	{
-		if(verbose==TRUE) LOG_ERR("\n\n[OUTPUT] isIgnoreOuFile is TRUE ");
+		if(verbose==TRUE) LOG_ERR("\n\n[OUTPUT] isIgnoreOuFile is TRUE. ");
 		// output file is ignored
+	}
+	else if(1==ismultiFilesExtract)
+	{
+		if(verbose==TRUE) LOG_ERR("\n\n[OUTPUT] ismultiFilesExtract is TRUE. so this do extract files --merge option file.. \n");
 	}
 	else if(1==isAppend)
 	{
@@ -3533,16 +3588,9 @@ int main(int argc, char *argv[])
 			/// OK---
 		}
 	}
+	/* ========== OUTPUT FILE ================= */
 
 
-	#if 0
-	if( 1==isAppend )
-		printf("\nWaiting... Output file : append \n");
-	else
-		printf("\nWaiting... Output file : new create \n");
-	#endif
-		
-		/* ========== OUTPUT FILE ================= */
 	
 
 	if( (0==isHash) && (1==isIgnoreOuFile) )
@@ -12798,6 +12846,140 @@ int main(int argc, char *argv[])
 	}
 #endif /// MODIFIED_JULIAN_DATE
 
+
+	else if( (1==ismultiFilesExtract) )
+	{
+		unsigned __int64	kll=0UL, ll=0UL;
+		int  ii=0, iiTot=0, hashOK=0;
+		unsigned __int64	fSize=0UL, fUsize=0UL, fRead=0UL;
+
+		
+		SHA256_CTX		ctx256;
+		unsigned char	sha256_buf[SHA2_BUFLEN];
+		int iLenSub=0;
+		
+
+		if( NULL != (inpfile = fopen( extractFile, "rb")) ) 
+		{
+			printf("\n");
+			memset(mergeTotIndex, 0x00, sizeof(mergeTotIndex) );
+			ll = fread(mergeTotIndex, 1, MERGE_TOTAL_CNT, inpfile); 
+			kll += ll;
+			iiTot = atoi(mergeTotIndex);
+			printf(">>Merged total cnt: %s (%d)\n", mergeTotIndex, iiTot);
+
+			memset(str_moduleName, 0x00, sizeof(str_moduleName) );
+			ll = fread(str_moduleName, 1, MAX_VERSION_LEN, inpfile); 
+			kll += ll;
+			printf(">>Model Name      : %s\n", str_moduleName);
+
+
+			memset(str_versionName, 0x00, sizeof(str_versionName) );
+			ll = fread(str_versionName, 1, MAX_VERSION_LEN, inpfile); 
+			kll += ll;
+			printf(">>Version Name    : %s\n", str_versionName);
+
+			memset(exFileInfo, 0x00, sizeof(exFileInfo) );
+			for(ii=0; ii<iiTot; ii++)
+			{
+				ll = fread((char *)&exFileInfo[ii], 1, sizeof(exFileInfo[0]), inpfile);
+				kll += ll;
+				printf("Index ---------: [%s] len:%d \n", exFileInfo[ii].mergeTxtIndex, strlen(exFileInfo[ii].mergeTxtIndex) );
+				printf("  Date --------: [%s] len:%d \n", exFileInfo[ii].mergeDate, strlen(exFileInfo[ii].mergeDate) );
+				printf("  FileName ----: [%s] len:%d \n", exFileInfo[ii].mergeFileName, strlen(exFileInfo[ii].mergeFileName) );
+				printf("  FileSize ----: [%s] len:%d \n", exFileInfo[ii].mergeTxtSize, strlen(exFileInfo[ii].mergeTxtSize)  );
+				exFileInfo[ii].mergeSHA256[MERGE_SHA256_SIZ] = 0x00; 
+				printf("  File SHA256 -: [%s] len:%d \n", exFileInfo[ii].mergeSHA256, strlen(exFileInfo[ii].mergeSHA256)  );
+
+				if(inpfile) fseek(inpfile, -1, SEEK_CUR);  /* because of SHA256 - 64bytes, SEEK_CUR, SEEK_END */
+
+			}
+
+
+			// === create output file			
+			printf("\n");
+			for(ii=0; ii<iiTot; ii++)
+			{
+				if( NULL == (outfile = fopen( exFileInfo[ii].mergeFileName, "wb"))	)	
+				{
+					printf("[++ERROR++]Can NOT create extract file... \n", exFileInfo[ii].mergeFileName );
+				}
+				else
+				{
+				
+					fSize = atoi(exFileInfo[ii].mergeTxtSize);
+					fRead = 1024;
+					fUsize = 0UL;
+					memset(strExtract, 0x00, sizeof(strExtract) );
+
+					printf(">>%2d -> Extracting --: %s / %d \n", ii+1, exFileInfo[ii].mergeFileName, fSize );
+					while((ll = fread(strExtract, 1, fRead, inpfile)) > 0) 
+					{
+						kll += ll;
+
+						fwrite(strExtract, sizeof(unsigned char), ll, outfile); 
+						fUsize += ll;
+
+						if( (fSize-fUsize) < 1024 ) fRead=(fSize-fUsize);
+					}					
+					fclose(outfile);
+
+				}
+			}
+
+		}
+		fclose(inpfile);
+
+
+		// ==================================================================
+		// === SHA256 Hashing
+		printf("\n");
+		hashOK = 0; // 0 for OK
+		for(ii=0; ii<iiTot; ii++)
+		{
+		
+			if( NULL == (inpfile = fopen( exFileInfo[ii].mergeFileName, "rb")) ) 
+			{
+				printf("Files not found for SHA256!! [%s] \n", exFileInfo[ii].mergeFileName );
+			}
+			else
+			{
+				/// initial
+				memset( &ctx256, 0x00, sizeof(SHA256_CTX) );
+				memset( sha256_buf, 0x00, sizeof(sha256_buf) );
+				
+				/// SHA2 Calculate ----
+				SHA256_Init(&ctx256);
+
+				kll = 0UL;
+				printf(">>%2d -> Read *SHA256*%s   %s \n", ii+1, exFileInfo[ii].mergeSHA256, exFileInfo[ii].mergeFileName );
+				while((ll = fread(sha256_buf, 1, SHA2_BUFLEN, inpfile)) > 0) 
+				{
+					kll += ll;
+					SHA256_Update(&ctx256, (unsigned char*)sha256_buf, ll);
+				}
+				SHA256_End(&ctx256, sha256_buf);
+				
+				if( 0 == strncmp(exFileInfo[ii].mergeSHA256, sha256_buf, MERGE_SHA256_SIZ ) )
+				{
+					printf("     SHA256 Hash OK... \n" );
+				}
+				else
+				{
+					printf("  SHA256 Hash NG ---:%s -> Not same file. Check plz.. \n", sha256_buf );
+					hashOK ++;
+				}
+			}
+			fclose(inpfile);				
+		}
+		// ==================================================================
+		if( 0 == hashOK )
+			printf("\nAll extracted files are trusted files... \n");
+		else
+			printf("\n[++ERROR++]An untrusted file has been created... check plz...\n");
+
+			
+	}
 	else if( (1==ismultiFilesMerge) )
 	{
 	int fileNum = iEndIdx-istartIdx;
