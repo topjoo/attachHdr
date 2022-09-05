@@ -555,8 +555,10 @@ void help(void)
            " Ex) ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --model BLTNCAM --version CI02-02 --output total.bin \n"
            "     ah.exe --model BLTNCAM --version CI02-02 --merge a100.bin a200.bin b300.bin c400.bin c600.bin --output total.bin \n"
            "     ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --version CI02-02 --output total.bin \n"
-           "     ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --output total.bin \n\n"
+           "     ah.exe --merge a100.bin a200.bin b300.bin c400.bin c600.bin --output total.bin \n"
+           "\n"
            "     ah.exe --extract total.bin \n"
+           "     ah.exe -x total.bin \n"
            "\n"
 	#if MODIFIED_JULIAN_DATE 
            "--[ MJD (Modified Julian Date) ]-------- -------------------------------------------------------------------------\n"
@@ -2344,7 +2346,6 @@ int main(int argc, char *argv[])
 			// extract =============================
 			case 'x':
 				{
-				int ii=0, reidx=0;
 
 					if(optarg) 
 					{

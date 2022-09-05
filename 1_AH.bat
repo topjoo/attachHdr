@@ -104,5 +104,7 @@ ah.exe --join 0x2a00 -i STM_mcu_Boot.bin  STM_mcu_302K8_App.bin  --output  MCU_T
 
 @REM --- files encapsulation --------------------------------------------------------------------------------
 ah.exe --model LGE-BLTNCAM-2.0 --version BLTNCAM-2.0 --merge ca72_bl3.rom  home-directory.ext4  tc-boot-tcc8053-dvrs.img  tcc8053-linux-dvrs-lpd4x322_sv1.0-tcc8053-dvrs.dtb  telechips-dvrs-image-tcc8053-dvrs.ext4 --output bltncam.lge
+@REM --- files extract --------------------------------------------------------------------------------
+ah.exe --extract bltncam.lge
 
 PAUSE
