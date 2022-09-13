@@ -12986,6 +12986,7 @@ int main(int argc, char *argv[])
 	int fileNum = iEndIdx-istartIdx;
 	int ii=1, i=0, length=0;
 	long 	attFile;
+	int iErr = 0;
 
 	unsigned __int64	kll=0UL, ll=0UL;
 	SHA256_CTX		ctx256;
@@ -13089,12 +13090,14 @@ int main(int argc, char *argv[])
 		
 
 		//==2== File List-up (Date/Size) and Index
+		iErr = 0;
 		for(ii=1; ii<fileNum; ii++)
 		{
 
 			if( (attFile = _findfirst( mFile[ii].mergeFileName, &mergeInfo )) == -1L )
 			{
 				printf( "No files in current directory!! (%d)-[%s] \n", ii, mFile[ii].mergeFileName );
+				iErr ++;
 			}
 			else
 			{
@@ -13121,6 +13124,8 @@ int main(int argc, char *argv[])
 			if( NULL == (inpfile = fopen( mFile[ii].mergeFileName, "rb")) ) 
 			{
 				printf("--merge option error, files not found!! [%s] \n", mFile[ii].mergeFileName );
+				iErr ++;
+
 				//AllFilesClosed();
 				//exit(0); /// help();
 				//return 0;
@@ -13237,6 +13242,8 @@ int main(int argc, char *argv[])
 				if( NULL == (inpfile = fopen( mFile[ii].mergeFileName, "rb")) ) 
 				{
 					printf("--merge option error2, files not found!! [%s] \n", mFile[ii].mergeFileName );
+					iErr ++;
+
 					//AllFilesClosed();
 					//exit(0); /// help();
 					//return 0;
@@ -13256,9 +13263,16 @@ int main(int argc, char *argv[])
 			}
 
 			if(outfile) fclose(outfile);
-			printf("\n>>Output file     : %s (%s)", outfile_name, (isAppend==1)? "append":"new create");
-			printf("\n>>Merge Completed...\n");
 
+			if( 0 == iErr )
+			{
+				printf("\n>>Output file 	: %s (%s)", outfile_name, (isAppend==1)? "append":"new create");
+				printf("\n>>Merge Completed...\n");
+			}
+			else
+			{
+				printf("\n>>Check input files...\n");
+			}
 		}
 		else
 		{
