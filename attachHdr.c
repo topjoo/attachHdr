@@ -477,6 +477,11 @@ void help(void)
            "     ah.exe -b AU1354 -m LAN1234 --cinfo md5    -i nk.bin      -o LAN1234_nk.LGE  --version 5.0.00(13E) \n"
            "     ah.exe -b AU1354 -m LAN1234 --cinfo shake128 -i nk.bin    -o LAN1234_nk.MTX  -v 5.0.00(13A) \n"
            "\n"
+           "  -p or --mcu [MCU VERSION NAME]         MCU Header only (Max 32bytes)\n" /* Building Date, Max 128 Characters  */
+           "\n"
+           " Ex) ah.exe -p M-LGCNS-K8HXX -i aig300lgcns.bin	-o mcu.dat \n"
+           "     ah.exe --mcu M-LGCNS-K8HXX -i aig300lgcns.bin -o mcu.dat \n"
+           "\n"
 		   "--[ Convert Float number to Hexa ]------ -------------------------------------------------------------------------\n"
 		   "  -g both -f or --ignore both --float [0.8543]     -g both -f 0.866 \n" 
 		   "  -g both -f or --ignore both --float [sin|cos|tan 60]  -g both -f sin 60 \n" 
@@ -892,6 +897,8 @@ int main(int argc, char *argv[])
 	__int64  sefile_size; /// 2017.04.05
 	char outfile_name[MAX_CHARS*LENGTH_OF_FILENAME+1];
 
+	char str_MCUversion[MAX_32CHARS+1]; // 2022-10-18
+
 	char str_boardName[MAX_CHARS+1]; /* PI2000 */
 	char str_moduleName[MAX_CHARS+1];
 	char str_versionName[MAX_VERSION_LEN+1]; // 2017.12.12
@@ -944,7 +951,7 @@ int main(int argc, char *argv[])
 	static int verbose_flag;
 
 	//static char strOpt[] = "gALz:h:b:m:v:i:o:a:cd:F:I:N:S:k:f:B:M:J:l:e";
-	static char strOpt[] = "g:ALz:h:b:m:v:i:o:a:c:d:F:I:N:S:f:B:M:J:l:ej:nE:P:kZR:y:x:"; // 2022.09.04
+	static char strOpt[] = "g:ALz:h:b:m:v:i:o:a:c:d:F:I:N:S:f:B:M:J:l:ej:nE:P:kZR:y:x:p:"; // 2022.09.04
 
 	static struct option long_options[] =
 	{
@@ -966,7 +973,7 @@ int main(int argc, char *argv[])
 		{"model",		required_argument, 0, 'm'}, /// Attach Header : Module Name (16byte)
 		{"alignword",	no_argument,       0, 'n'}, // intel family address alignment word ENABLE
 		{"output",		required_argument, 0, 'o'}, /// output filename
-	//	{"file",		required_argument, 0, 'p'},
+		{"mcu",			required_argument, 0, 'p'}, // MCU version 32byte added
 	//	{"file",		required_argument, 0, 'q'},
 	//	{"reverse",		no_argument,       0, 'r'}, /// bmp reverse
 	//	{"size",		required_argument, 0, 's'}, // 2nd file size
@@ -1053,6 +1060,7 @@ int main(int argc, char *argv[])
 	memset(Mot2Bin_Data_Str, 0x00, sizeof(Mot2Bin_Data_Str) ); /// 2014.06.26
 #endif
 
+	memset(str_MCUversion, 0x00, sizeof(str_MCUversion) );
 
 	memset( str_cmBuf, 0x00, sizeof(str_cmBuf) );
 	memset( strHex2BinLen, 0x00, sizeof(strHex2BinLen) );
@@ -2998,7 +3006,38 @@ int main(int argc, char *argv[])
 				}
 
 				break;
-		
+
+			/* 2022-10-18 MCU 32Bytes packet added */
+			case 'p':
+
+				if(optarg) 
+				{
+					olen = 0;
+					isAttach = ATT_MCU_VER_ONLY;
+
+					memcpy(str_MCUversion, optarg, MAX_32CHARS);
+					olen = strlen(str_MCUversion);
+					
+					printf("\n>>MCU Version     : %s", str_MCUversion);
+
+					if( olen > MAX_32CHARS )
+					{
+						printf("\n\n[++ERROR++] MCU Version Name length is too long (%d Chars).. Max:%d Bytes\n\n", olen, MAX_32CHARS );
+					}
+				}
+				else
+				{
+					printf("\n\n WARNING:wrong option --mcu [string]. check option\r\n");
+
+					beep(700,100);
+					AllFilesClosed(); // 2020.07.10
+					exit(0); /// 2017.11.21
+
+					return 0;
+				}
+
+				break;
+				
 		    case 'i': /* input file name : 32 characters */
 				olen = 0;
 				multifileindex = 0;
@@ -3618,7 +3657,7 @@ int main(int argc, char *argv[])
 
 	/* 1. Header (Version) ∫Ÿ¿Ã±‚ */
 	if(    (0 == isDelHdr) 
-		&& ( (ATT_VERSION|ATT_DATEorCRC|ATT_MODEL|ATT_BOARD)== isAttach ) /// 2014.07.25
+		&& ( ((ATT_VERSION|ATT_DATEorCRC|ATT_MODEL|ATT_BOARD)==isAttach) || ATT_MCU_VER_ONLY==isAttach) /* 2022-10-18 */
 		&& (0 == isIgnoreBothFile) /// 2014.07.14
 		&& (0 == isCRC) 
 		&& (0 == isFillSize) 
@@ -3697,8 +3736,80 @@ int main(int argc, char *argv[])
 
 	   )
 	{
+	
 		len_attach_hdr = 0; // 2020.07.07, Total Header Length
 
+	if(ATT_MCU_VER_ONLY == isAttach) /* 2022-10-18 */
+	{
+		
+		if(inpfile) { fclose(inpfile); inpfile=NULL; } // file close for checksum
+
+
+		// --------------------------------------------------
+		/* ++++++++ MCU VERSION ONLY  +++++++++++++++++++++++++++ */
+		/* +++++++++++++++++++++++++++++++++++++++++++++++ */
+		len_version_name = strlen(str_MCUversion);
+		if( len_version_name < MAX_32CHARS )
+		{
+			if( len_version_name == 0 ) 
+			{ 
+				memcpy(str_MCUversion, DUMMY_FILL, DUMMY_FILL_LEN); 
+				len_version_name = DUMMY_FILL_LEN; 
+			}
+			if(outfile) fprintf(outfile,"%s", str_MCUversion);
+			while( len_version_name < MAX_32CHARS )
+			{
+				if(outfile) fprintf(outfile,"%c",SPACE_FILL4);
+				len_version_name++;
+			}
+		}
+		else
+		{
+			count=0;
+			while( count < MAX_32CHARS )
+			{
+				if(outfile) fprintf(outfile,"%c",str_MCUversion[count] );
+				count++;
+			}
+		}
+
+		len_attach_hdr += MAX_32CHARS; // for MCU Version Name
+			
+		
+		// ==========================================
+		// ==========================================
+		/* ========== INPUT FILE ================= */
+		if( NULL == (inpfile = fopen( infile_name, "rb")) ) 
+		{
+			beep(700,100);
+			printf("\n\n[+ERROR+] Can not open input file[%s] \n",infile_name);
+			if( NULL == infile_name || infile_name[0] == 0x00)
+				printf("[+ERROR+] Must be input file with -i or --input option. \n" );
+		
+			AllFilesClosed();
+		
+			exit(0); /// help();
+			return 0;
+		}
+		else
+		{
+			/// OK ---
+			if (fstat(fileno(inpfile), &file_statbuf) < 0) 
+			{ 
+				printf("\n\n[++ERROR++]Cannot stat [%s]\n", infile_name ); 
+		
+				AllFilesClosed(); // 2020.07.10
+				exit(0);
+				return 2; 
+			}	 
+		}
+		/* ========== INPUT FILE ================= */
+		// ==========================================
+		// ==========================================
+
+	}
+	else
+	{
 
 		if( 0x00 == str_boardName[0] )
 	        printf("\n>>Board Name (default)  : %s", DUMMY_FILL);
@@ -4955,6 +5066,9 @@ int main(int argc, char *argv[])
 		/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 		/* HEADER INSERTION */
 		/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+	}
+
+
 		
 
 		/// Attached Header --- 2014.07.15
@@ -4970,7 +5084,14 @@ int main(int argc, char *argv[])
 				fwrite(read_buf, sizeof(unsigned char), fr_size, outfile); 
 			}
 
-			printf("\nHDR>> Attached Header!! (%dBytes) - OK", len_attach_hdr);
+			if(ATT_MCU_VER_ONLY == isAttach) /* 2022-10-18 */
+			{
+				printf("\nHDR>> Attached Header!! (MCU HDR: %s) - OK", str_MCUversion);
+			}
+			else
+			{
+				printf("\nHDR>> Attached Header!! (%dBytes) - OK", len_attach_hdr);
+			}
 		}
 		else
 		{

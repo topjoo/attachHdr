@@ -40,7 +40,7 @@
 
 
 
-char Attversion[] = "3.3.2"; /* ver 3.3.2 : 2022.09.04 : Hex2bin checksum error display and fix */
+char Attversion[] = "3.3.6"; /* ver 3.3.2 : 2022.09.04 : Hex2bin checksum error display and fix */
 char EmailText[]  = "tp.joo@daum.net";
 
 
@@ -330,6 +330,7 @@ typedef struct _RGBTRIPLE			 // 24비트 비트맵 이미지의 픽셀 구조체
 #define MAX_VERSION_LEN 			16 // 2017.12.12
 #define MAX_CRC_LEN_CODE 			16 // 2017.11.21
 #define MAX_HASH_CODE 				128 // 2017.11.21
+#define MAX_32CHARS 				32 // 2022-10-18
 
 #define MAX_FILENAME_LEN 			256
 
@@ -353,6 +354,8 @@ typedef struct _RGBTRIPLE			 // 24비트 비트맵 이미지의 픽셀 구조체
 #define ATT_DATEorCRC 		0x0002
 #define ATT_MODEL 			0x0004
 #define ATT_BOARD 			0x0008
+
+#define ATT_MCU_VER_ONLY 	0x8008
 
 
 #define MONTH_LEN 	12
