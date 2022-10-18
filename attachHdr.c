@@ -74,6 +74,7 @@
  *  - 2020/10/23 : 2.17 SHA1, SHA224/256/384/512 read buffer size : 10KB -> 100KB
  *  - 2020/12/10 : 2.18 delete printf() [INPUT]...
  *  - 2021/10/07 : CAN dbc parser
+ *  - 2022/10/18 : MCU Version Header is attached only. (Max 32Bytes)
  *
  *
  * How to build :
@@ -96,9 +97,9 @@
  *    time   seconds   seconds    calls  Ts/call  Ts/call  name      
  *    0.00      0.00     0.00    3901932     0.00     0.00  sha1_process  
  *    0.00      0.00     0.00     243914     0.00     0.00  sha1_update  
- *    0.00      0.00     0.00            19     0.00     0.00  sha1_finish  
- *    0.00      0.00     0.00            19     0.00     0.00  sha1_starts  
- *    0.00      0.00     0.00             1     0.00     0.00  help_brief
+ *    0.00      0.00     0.00         19     0.00     0.00  sha1_finish  
+ *    0.00      0.00     0.00         19     0.00     0.00  sha1_starts  
+ *    0.00      0.00     0.00          1     0.00     0.00  help_brief
  *
  *			 
  *
@@ -794,7 +795,7 @@ int main(int argc, char *argv[])
 
 #pragma pack(pop)
 
-	char strExtract[1024+1];
+	char strExtract[EXTRACT_FILE_SIZE+1];
 // ======================================================================
 
 
@@ -13030,7 +13031,7 @@ int main(int argc, char *argv[])
 				{
 				
 					fSize = atoi(exFileInfo[ii].mergeTxtSize);
-					fRead = 1024;
+					fRead = EXTRACT_FILE_SIZE;
 					fUsize = 0UL;
 					memset(strExtract, 0x00, sizeof(strExtract) );
 
@@ -13044,13 +13045,13 @@ int main(int argc, char *argv[])
 
 						if( (fSize-fUsize) < 1024 ) fRead=(fSize-fUsize);
 					}					
-					fclose(outfile);
+					if(outfile) fclose(outfile);
 
 				}
 			}
 
 		}
-		fclose(inpfile);
+		if(inpfile) fclose(inpfile);
 
 
 		// ==================================================================
@@ -13092,7 +13093,7 @@ int main(int argc, char *argv[])
 					hashOK ++;
 				}
 			}
-			fclose(inpfile);				
+			if(inpfile) fclose(inpfile);				
 		}
 		// ==================================================================
 		if( 0 == hashOK )

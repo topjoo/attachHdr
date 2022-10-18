@@ -40,7 +40,7 @@
 
 
 
-char Attversion[] = "3.3.6"; /* ver 3.3.2 : 2022.09.04 : Hex2bin checksum error display and fix */
+char Attversion[] = "3.4.0"; /* ver 3.4.0 : 2022.10.18 : Hex2bin checksum error display and fix */
 char EmailText[]  = "tp.joo@daum.net";
 
 
@@ -357,6 +357,8 @@ typedef struct _RGBTRIPLE			 // 24비트 비트맵 이미지의 픽셀 구조체
 
 #define ATT_MCU_VER_ONLY 	0x8008
 
+#define EXTRACT_FILE_SIZE 		1024
+
 
 #define MONTH_LEN 	12
 typedef struct {
@@ -393,7 +395,6 @@ enum {
 
 	ASTERISK_MAX = 9
 };
-
 
 
 #endif //__ATTACH_HDR_H__
