@@ -75,6 +75,7 @@
  *  - 2020/12/10 : 2.18 delete printf() [INPUT]...
  *  - 2021/10/07 : CAN dbc parser
  *  - 2022/10/18 : MCU Version Header is attached only. (Max 32Bytes)
+ *  - 2022/10/22 : --board --model --version --cinfo --mcu options is seperated. (--mcu option is Max 32Bytes)
  *
  *
  * How to build :
@@ -134,6 +135,7 @@
 #include "feature.h"
 #include "attachHdr.h"
 
+
 #include "hash.c"
 #include "mjd.c"
 #include "hex2bin.c"
@@ -187,7 +189,7 @@ void 	FileCounter(char *txt)
 	/* Find first .c file in current directory */
 	if( (roothFile = _findfirst( "*.*", &root_files )) == -1L )
 	{
-		printf( "No files in current directory! \n" );
+		printf("No files in current directory! \n");
 	}
 	else
 	{
@@ -200,12 +202,12 @@ void 	FileCounter(char *txt)
 		}
 		else if( 0 == strncmp(txt,"line", 4) )
 		{
-			printf( "\nFILENAME                                                 LINES\n" );
-			printf(   "-------------------------------------------------------  ------\n" );
+			printf( "\nFILENAME                                                 LINES\n");
+			printf(   "-------------------------------------------------------  ------\n");
 		}
 		else 
 		{ 
-			printf("Check option...\n" );
+			printf("Check option...\n");
 			return; 
 		}
 	
@@ -226,7 +228,7 @@ void 	FileCounter(char *txt)
 				{
 					memset( strtmp, 0x00, sizeof(strtmp) );
 					subdlen = (48-5-strlen(root_files.name));
-					for(itmp=0; itmp<subdlen; itmp++) strtmp[itmp] = 0x20; /// fill SPACE
+					for(itmp=0; itmp<subdlen; itmp++) strtmp[itmp] = 0x20; /* fill SPACE */
 					
 					printf( " *[%s]* %s %.24s ", root_files.name, strtmp, ctime( &( root_files.time_write ) ) );
 				}
@@ -410,17 +412,12 @@ char *commify(double val, char *buf, int round)
 
 void help_brief(void)
 {
-
 //	printf("\033[32m"); /* GREEN */
 //	//printf("\033[34m"); /* BLUE */
 
 	printf("-------------------------------------------------------------\n");
-	printf(" ah.exe %s by TOP.JOO (%s)/ %s \n", Attversion, EmailText, __DATE__ );
+	printf(" ah.exe %s by TOP.JOO (%s)/ %s \n", AttVersion, EmailText, __DATE__ );
 	printf("-------------------------------------------------------------\n");
-
-//	printf("\033[0m"); 
-//	fflush(stdout); 
-
 }
 
 
@@ -534,16 +531,16 @@ void help(void)
            "     ah.exe --input romp.hex --output BIN\\ROMP.bin --motorola --length 10000 --padbyte ab \n"
            "\n"
            "--[ WinCE Record ]---------------------- -------------------------------------------------------------------------\n"
-           "  -N or --nk [nb0|none]                  NK.BIN (WinCE Kernel) Record information \n"
+           "  -N or --nk [nb0|none]                   NK.BIN (WinCE Kernel) Record information \n"
            " Ex) ah.exe -i nk.bin -o NK.LOG -N none \n"
            "     ah.exe --input nk.bin --output NK.LOG -nk nb0 \n"
            "\n"
            "--[ Files Merge/Join ]------------------ -------------------------------------------------------------------------\n"
-           "  -j or --join [hexa value]              Specify the 1st file's total size in hexa. \n"
-           "        --join [640kB/320kB]             Specify the 1st file's total size 640kB/320kB in size unit no-space. \n"
-           "        --join [1MB/2MB]                 Specify the 1st file's total size 1MB/2MB in size unit no-space. \n"
-           "  -E or --endian [little|big]            Calculate the 2nd file size in hexa (4byte) \n"
-           "  -P or --padbyte [hexa value]           Pad byte in hexa (1byte). default is 0xFF \n"
+           "  -j or --join [hexa value]               Specify the 1st file's total size in hexa. \n"
+           "        --join [640kB/320kB]              Specify the 1st file's total size 640kB/320kB in size unit no-space. \n"
+           "        --join [1MB/2MB]                  Specify the 1st file's total size 1MB/2MB in size unit no-space. \n"
+           "  -E or --endian [little|big]             Calculate the 2nd file size in hexa (4byte) \n"
+           "  -P or --padbyte [hexa value]            Pad byte in hexa (1byte). default is 0xFF \n"
            "\n"
            " Ex) ah.exe -j 3000       -i [1st-file] [2nd-file] -o [merged output file] \n"
            "     ah.exe --join 0x8000 -i [1st-file] [2nd-file] -o [merged output file] \n"
@@ -553,7 +550,6 @@ void help(void)
            "     ah.exe --join 2800   --endian little -i STM_mcu_Boot.bin  STM_mcu_302K8_App.bin -o STM_mcu_TotalQD21.bin \n"
            "     ah.exe --join 0x2800 --endian big    -i STM_mcu_Boot.bin  STM_mcu_302K8_App.bin -o STM_mcu_TotalQD21.bin \n"
            "\n"
-
            "--[ Files Encapsulation/Extract ]------- -------------------------------------------------------------------------\n"
            "  -y or --merge [1st file 2nd file .....] Specify the file lists to be merging to 1 file. Max count is 100 files.\n"
            "  -x or --extract [filename]              Specify the merged file name (upto 100 files). \n"
@@ -581,15 +577,15 @@ void help(void)
 	#endif
 
            "--[ Others ]---------------------------- -------------------------------------------------------------------------\n"
-           "  -I or --fileinform [all|line]          Searching all files. -I all , -I lines \n"
+           "  -I or --fileinform [all|line]           Searching all files. -I all , -I lines \n"
            "  Ex) ah.exe -I all \n"
            "\n"
-           "  -F or --fillsize [size in hexa]        Fill Pad Byte. (default:0xFF). The fillsize means total file length. \n"
-           "        --fillsize [a0000]               hexa value 0xa0000 for length 640kByte \n"
-           "        --fillsize [640kB]               For total length 640kBytes \n"
-           "        --fillsize [1MB]                 For example, output file total length is 1MBytes \n"
-           "  -z or --verbose 0|1|2|3|4              display message\n"
-           "        --verbose date|size|datesize     display message\n"
+           "  -F or --fillsize [size in hexa]         Fill Pad Byte. (default:0xFF). The fillsize means total file length. \n"
+           "        --fillsize [a0000]                hexa value 0xa0000 for length 640kByte \n"
+           "        --fillsize [640kB]                For total length 640kBytes \n"
+           "        --fillsize [1MB]                  For example, output file total length is 1MBytes \n"
+           "  -z or --verbose 0|1|2|3|4               display message\n"
+           "        --verbose date|size|datesize      display message\n"
            "\n"
            " Ex) ah.exe --input STM32.bin --output mcuTOT_STM32.bin --fillsize a0000  \n"
            "     ah.exe --input STM32.bin --output mcuTOT_STM32.bin --fillsize 640kB --padbyte CC  \n"
@@ -635,7 +631,7 @@ void help(void)
            "      565                RGB 565 \n"
 	#endif /// CONVERT_BMP2C
            "------------------------------------------------------------------------------------------------------------------\n", 
-           		Attversion, __DATE__ , /* __TIME__ , */ (INT2BIN_MEMORY_SIZE>>20), (MOT2BIN_MEMORY_SIZE>>20) );
+           		AttVersion, __DATE__ , /* __TIME__ , */ (INT2BIN_MEMORY_SIZE>>20), (MOT2BIN_MEMORY_SIZE>>20) );
 
 
 
@@ -883,6 +879,7 @@ int main(int argc, char *argv[])
 	int len_version_name = 0;
 	int len_build_date = 0;
 	int len_attach_hdr = 0; // 2020.07.07
+	int len_checksum = 0;
 	int iloop=0;
 	int temp_index = 0;
 #if MODIFIED_JULIAN_DATE 
@@ -3945,6 +3942,7 @@ int main(int argc, char *argv[])
 				}
 
 				len_attach_hdr += MAX_CRC_LEN_CODE; // 2020.07.07, for CRC16 Name
+				len_checksum = MAX_CRC_LEN_CODE; /* 2022-10-22 */
 
 			} 	
 			else if( HDR_KSC_CRC16 == isCRCtype )
@@ -3964,6 +3962,7 @@ int main(int argc, char *argv[])
 				}
 
 				len_attach_hdr += MAX_CRC_LEN_CODE; // 2020.07.07, for CRC16 Name
+				len_checksum = MAX_CRC_LEN_CODE; /* 2022-10-22 */
 
 			} 	
 			else if( HDR_CRC16CCITT == isCRCtype )
@@ -3983,6 +3982,7 @@ int main(int argc, char *argv[])
 				}
 
 				len_attach_hdr += MAX_CRC_LEN_CODE; // 2020.07.07, for CRC16 Name
+				len_checksum = MAX_CRC_LEN_CODE; /* 2022-10-22 */
 
 			}
 			else if( HDR_CRC32 == isCRCtype  )
@@ -4002,6 +4002,7 @@ int main(int argc, char *argv[])
 				}
 
 				len_attach_hdr += MAX_CRC_LEN_CODE; // 2020.07.07, for CRC32 Name
+				len_checksum = MAX_CRC_LEN_CODE; /* 2022-10-22 */
 
 			}
  			else if( HDR_CRC64 == isCRCtype  )
@@ -4021,6 +4022,7 @@ int main(int argc, char *argv[])
 				}
 
 				len_attach_hdr += MAX_CRC_LEN_CODE; // 2020.07.07, for CRC64 Name
+				len_checksum = MAX_CRC_LEN_CODE; /* 2022-10-22 */
 
 			}
 			else if( HDR_CRC64_ISC==isCRCtype )
@@ -4040,6 +4042,8 @@ int main(int argc, char *argv[])
 				}
 
 				len_attach_hdr += MAX_CRC_LEN_CODE; // 2020.07.07, for CRC64 Name
+				len_checksum = MAX_CRC_LEN_CODE; /* 2022-10-22 */
+
 			}
 			else if( HDR_ADLER32 == isCRCtype  ) 
 			{
@@ -4058,6 +4062,8 @@ int main(int argc, char *argv[])
 				}
 
 				len_attach_hdr += MAX_CRC_LEN_CODE; // 2020.07.07, for CRC64 Name
+				len_checksum = MAX_CRC_LEN_CODE; /* 2022-10-22 */
+
 			}
 			else if( HDR_JOAAT == isCRCtype  ) 
 			{
@@ -4076,6 +4082,7 @@ int main(int argc, char *argv[])
 				}
 
 				len_attach_hdr += MAX_CRC_LEN_CODE;
+				len_checksum = MAX_CRC_LEN_CODE; /* 2022-10-22 */
 			}
 
 		#if 1 // 2017.11.21
@@ -4111,6 +4118,7 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", SHA1output, str_hash, infile_name, infile_size );
 
 				len_attach_hdr += SHA_HASH_LENGTH; // 2020.07.07, for SHA1 Hash 
+				len_checksum = SHA_HASH_LENGTH; /* 2022-10-22 */
 
 				//free(sha1_buf);
 				
@@ -4169,7 +4177,8 @@ int main(int argc, char *argv[])
 				//fprintf(outfile,"%s", sha256_buf);
 
 				len_attach_hdr += (SHA224_DIGEST_SIZE*2); // 2020.07.07, for SHA1 Hash 
-			
+				len_checksum = (SHA224_DIGEST_SIZE*2); /* 2022-10-22 */
+
 			}
 			else if(HDR_SHA256 == isCRCtype )
 			{
@@ -4203,6 +4212,7 @@ int main(int argc, char *argv[])
 				printf("%s	*%s*%s__(%llu) \r\n", sha256_buf, str_hash, infile_name, infile_size );
 
 				len_attach_hdr += (SHA256_DIGEST_SIZE*2); // 2020.07.07, for SHA1 Hash 
+				len_checksum = (SHA256_DIGEST_SIZE*2); /* 2022-10-22 */
 
 			}				
 			else if(HDR_SHA384 == isCRCtype )
@@ -4236,6 +4246,7 @@ int main(int argc, char *argv[])
 				//fprintf(outfile,"%s  *SHA384*%s__(%llu) \r\n", sha384_buf, infile_name, infile_size );
 
 				len_attach_hdr += (SHA384_DIGEST_SIZE*2); // 2020.07.07, for SHA1 Hash 
+				len_checksum = (SHA384_DIGEST_SIZE*2); /* 2022-10-22 */
 
 			}
 			else if(HDR_SHA512 == isCRCtype )
@@ -4270,6 +4281,7 @@ int main(int argc, char *argv[])
 				//fprintf(outfile,"%s  *SHA512*%s__(%llu) \r\n", sha512_buf, infile_name, infile_size );
 
 				len_attach_hdr += (SHA512_DIGEST_SIZE*2); // 2020.07.07, for SHA1 Hash 
+				len_checksum = (SHA512_DIGEST_SIZE*2); /* 2022-10-22 */
 
 			}
 			else if(HDR_SHA3_224 == isCRCtype )
@@ -4312,7 +4324,8 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", sha3digestTxt, str_hash, infile_name, infile_size   );
 
 				len_attach_hdr += (SHA3_OUT_224*2); // 2020.07.07, for SHA1 Hash 
-					
+				len_checksum = (SHA3_OUT_224*2); /* 2022-10-22 */
+	
 			}
 			else if(HDR_SHA3_256 == isCRCtype )
 			{
@@ -4352,6 +4365,7 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", sha3digestTxt, str_hash, infile_name, infile_size   );
 
 				len_attach_hdr += (SHA3_OUT_256*2); // 2020.07.07, for SHA1 Hash 
+				len_checksum = (SHA3_OUT_256*2); /* 2022-10-22 */
 
 			}
 			else if(HDR_SHA3_384 == isCRCtype )
@@ -4392,6 +4406,7 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", sha3digestTxt, str_hash, infile_name, infile_size   );
 
 				len_attach_hdr += (SHA3_OUT_384*2); // 2020.07.07, for SHA1 Hash 
+				len_checksum = (SHA3_OUT_384*2); /* 2022-10-22 */
 
 			}
 			else if(HDR_SHA3_512 == isCRCtype )
@@ -4433,6 +4448,7 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", sha3digestTxt, str_hash, infile_name, infile_size   );
 
 				len_attach_hdr += (SHA3_OUT_512*2); // 2020.07.07, for SHA1 Hash 
+				len_checksum = (SHA3_OUT_512*2); /* 2022-10-22 */
 
 			}
 			else if( HDR_SHAKE128 == isCRCtype )
@@ -4474,6 +4490,7 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", sha3digestTxt, str_hash, infile_name, infile_size   );
 
 				len_attach_hdr += (SHAKE_OUT_128*2); // 2020.07.07, for SHA1 Hash 
+				len_checksum = (SHAKE_OUT_128*2); /* 2022-10-22 */
 
 			}
 			else if( HDR_SHAKE256 == isCRCtype )
@@ -4515,6 +4532,7 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", sha3digestTxt, str_hash, infile_name, infile_size   );
 
 				len_attach_hdr += (SHAKE_OUT_256*2); // 2020.07.07, for SHA1 Hash 
+				len_checksum = (SHAKE_OUT_256*2); /* 2022-10-22 */
 
 			}
 			else if(HDR_MD5 == isCRCtype )
@@ -4558,6 +4576,7 @@ int main(int argc, char *argv[])
 			#endif
 
 				len_attach_hdr += (16*2); // 2020.07.07, for SHA1 Hash 
+				len_checksum = (16*2); /* 2022-10-22 */
 
 			}
 			else if(HDR_MD6 == isCRCtype )
@@ -4613,6 +4632,7 @@ int main(int argc, char *argv[])
 			#endif
 
 				len_attach_hdr += (32*2); // 2020.07.07, for SHA1 Hash 
+				len_checksum = (32*2); /* 2022-10-22 */
 
 			}	
 			else if(HDR_MD2 == isCRCtype )
@@ -4646,6 +4666,7 @@ int main(int argc, char *argv[])
 				printf ("  *MD2*%s__(%llu) \n", infile_name, infile_size );
 	
 				len_attach_hdr += (MD2_DIGEST_LENGTH*2); // 2020.07.15, for MD2 Hash 
+				len_checksum = (MD2_DIGEST_LENGTH*2); /* 2022-10-22 */
 	
 			}
 			else if(HDR_MD4 == isCRCtype )
@@ -4680,6 +4701,7 @@ int main(int argc, char *argv[])
 				printf ("  *MD4*%s__(%llu) \r\n", infile_name, infile_size);
 
 				len_attach_hdr += (MD4_DIGEST_LENGTH*2); // 2020.07.15, for MD4 Hash 
+				len_checksum = (MD4_DIGEST_LENGTH*2); /* 2022-10-22 */
 
 			}
 
@@ -4723,6 +4745,7 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", outTxt, str_hash, infile_name, infile_size   );
 			
 				len_attach_hdr += (BLAKE224_LEN*2);
+				len_checksum = (BLAKE224_LEN*2); /* 2022-10-22 */
 
 			}
 			else if( HDR_BLAKE256 == isCRCtype )
@@ -4763,6 +4786,7 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", outTxt, str_hash, infile_name, infile_size   );
 			
 				len_attach_hdr += (BLAKE256_LEN*2);
+				len_checksum = (BLAKE256_LEN*2); /* 2022-10-22 */
 
 			}
 			else if( HDR_BLAKE384 == isCRCtype )
@@ -4803,6 +4827,7 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", outTxt, str_hash, infile_name, infile_size   );
 			
 				len_attach_hdr += (BLAKE384_LEN*2);
+				len_checksum = (BLAKE384_LEN*2); /* 2022-10-22 */
 
 			}
 			else if( HDR_BLAKE512 == isCRCtype )
@@ -4843,6 +4868,7 @@ int main(int argc, char *argv[])
 				printf("%s  *%s*%s__(%llu) \r\n", outTxt, str_hash, infile_name, infile_size   );
 			
 				len_attach_hdr += (BLAKE512_LEN*2);
+				len_checksum = (BLAKE512_LEN*2); /* 2022-10-22 */
 
 			}
 		#endif
@@ -4917,7 +4943,8 @@ int main(int argc, char *argv[])
 				if(outfile) fprintf(outfile, "%s", outTxt);
 
 				len_attach_hdr += (RMD128_DIGEST_SIZE*2);
-	
+				len_checksum = (RMD128_DIGEST_SIZE*2); /* 2022-10-22 */
+
 			}
 			else if(HDR_RMD160 == isCRCtype )
 			{
@@ -4989,6 +5016,7 @@ int main(int argc, char *argv[])
 				if(outfile) fprintf(outfile, "%s", outTxt);
 				
 				len_attach_hdr += (RMD160_DIGEST_SIZE*2);
+				len_checksum = (RMD160_DIGEST_SIZE*2); /* 2022-10-22 */
 
 			}	
 		#endif		
@@ -5071,6 +5099,7 @@ int main(int argc, char *argv[])
 			}
 
 			len_attach_hdr += MAX_CHARS; // 2020.07.07, for date 
+			len_checksum = MAX_CHARS; /* 2022-10-22 */
 
 		}
 		/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -5080,6 +5109,9 @@ int main(int argc, char *argv[])
 	
 
 		
+		/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+		/* ++ Encapsulation Header ++ */
+		/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 		/// Attached Header --- 2014.07.15
 		if(inpfile && outfile)
@@ -5095,10 +5127,15 @@ int main(int argc, char *argv[])
 			}
 
 			printf("\nHDR>> Attached Header!! (%dBytes) - OK", len_attach_hdr);
+
+			if( len_checksum && (ATT_DATEorCRC==isAttachCRC) && (1==insertCRC) )
+			{
+				printf("\n      Encapsulated checksum (%s) length : %d ", str_crcAdd, len_checksum);
+			}
 		}
 		else
 		{
-			printf("\nHDR>> Can not open input file[%s] or output file[%s] \n", infile_name, outfile_name);
+			printf("\nHDR>> Can NOT open/write input file[%s] or output file[%s] \n", infile_name, outfile_name);
 		}
 
 		AllFilesClosed();
@@ -5136,7 +5173,7 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			printf("\nHDR>> Can not open output file[%s] or input file[%s] \n", outfile_name, infile_name );
+			printf("\nHDR>> Can NOT write/open output file[%s] or input file[%s] \n", outfile_name, infile_name );
 		}
 
 		AllFilesClosed();
@@ -5194,8 +5231,6 @@ int main(int argc, char *argv[])
 		unsigned int index = 0;
 		unsigned int iloop = 0;
 		int iLenSub=0;
-
-	#if 1
 		char cdate[30];
 		time_t	sys_t;
 		int ilen;
@@ -5211,7 +5246,7 @@ int main(int argc, char *argv[])
 		cdate[ilen-0] = '\0';
 		cdate[ilen-1] = '\0';
 		/// cdate = Sun Jun 29 12:09:12 2014		
-	#endif
+
 		
 		LOG_V("\n");
 

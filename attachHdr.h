@@ -40,8 +40,8 @@
 
 
 
-char Attversion[] = "3.5.0"; /* ver 3.5.0 : 2022.10.22 : Hex2bin checksum error display and fix */
-char EmailText[]  = "tp.joo@daum.net";
+const char AttVersion[] = "3.5.0"; /* ver 3.5.0 : 2022.10.22 : Hex2bin checksum error display and fix */
+const char EmailText[]  = "tp.joo@daum.net";
 
 
 enum {
