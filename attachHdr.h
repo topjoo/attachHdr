@@ -40,7 +40,7 @@
 
 
 
-char Attversion[] = "3.4.0"; /* ver 3.4.0 : 2022.10.18 : Hex2bin checksum error display and fix */
+char Attversion[] = "3.5.0"; /* ver 3.5.0 : 2022.10.22 : Hex2bin checksum error display and fix */
 char EmailText[]  = "tp.joo@daum.net";
 
 
@@ -350,12 +350,13 @@ typedef struct _RGBTRIPLE			 // 24비트 비트맵 이미지의 픽셀 구조체
 #define CHECK_BIT_OUT 		0x02
 
 
-#define ATT_VERSION 		0x0001
-#define ATT_DATEorCRC 		0x0002
-#define ATT_MODEL 			0x0004
-#define ATT_BOARD 			0x0008
+#define ATT_VERSION 		0x0001 /* 16Bytes */
+#define ATT_DATEorCRC 		0x0002 /* 16Bytes or variable */
+#define ATT_MODEL 			0x0004 /* 16Bytes */
+#define ATT_BOARD 			0x0008 /* 16Bytes */
 
-#define ATT_MCU_VER_ONLY 	0x8008
+#define ATT_MCU_32BYTE 		0x0010 /* 32Bytes */
+
 
 #define EXTRACT_FILE_SIZE 		1024
 

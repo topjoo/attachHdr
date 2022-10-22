@@ -452,7 +452,8 @@ void help(void)
 		   "--[ Attach Header and Order ]----------- -------------------------------------------------------------------------\n"
 		   "  -b or --board [CPU/PCB NAME]           CPU/PCB/Module Name (Max. 16 bytes)\n"	 /* PI2000, Max 16 Characters */
 		   "  -m or --model [MODEL NAME]             Model Name (Max. 16 bytes)\n"	 /* GMPT43, Max 16 Characters  */
-           "  -v or --version [VERSION NAME]         Version Name (Max. 16 bytes) \n"
+           "  -v or --version [VERSION NAME]         Version Name (Max. 16 bytes) or \n"
+           "  -p or --mcu [VERSION NAME]             MCU Version Header (Max 32bytes) \n" /* Building Date, Max 128 Characters  */
 		   "  -c or --cinfo date                     Building Date/Time(size is 16bytes)\n" /* Building Date, Max 128 Characters  */
 		   "        --cinfo crc16|crc16c|crc32       Insert checksum-lowercase in front of output file. (Max. 16Bytes) \n"  
 		   "        --cinfo crc16ksc                 Insert checksum-lowercase in front of output file. (Max. 16Bytes) \n"  
@@ -474,13 +475,12 @@ void help(void)
            " Ex) ah.exe -b AU1354 -m LAN1234 -c date  -i nk.bin -o LAN1234_nk.JOO --version 5.0.00(13A) \n"
            "     ah.exe -b AU1354 -m LAN1234 --cinfo crc16  -i nk.bin -o LAN1234_nk.JOO -v 5.0.00(13A) \n"
            "     ah.exe -b AU1354 -m LAN1234 --cinfo crc64  --input nk.bin --output LAN1234_nk.LGE -v 5.0.00(13A) \n"
-           "     ah.exe -b AU1354 -m LAN1234 --cinfo sha256 -i nk.bin      -o LAN1234_nk.LGE  -v 5.0.00(13E) \n"
-           "     ah.exe -b AU1354 -m LAN1234 --cinfo md5    -i nk.bin      -o LAN1234_nk.LGE  --version 5.0.00(13E) \n"
-           "     ah.exe -b AU1354 -m LAN1234 --cinfo shake128 -i nk.bin    -o LAN1234_nk.MTX  -v 5.0.00(13A) \n"
-           "\n"
-           "  -p or --mcu [MCU VERSION NAME]         MCU Header only (Max 32bytes)\n" /* Building Date, Max 128 Characters  */
-           "\n"
-           " Ex) ah.exe -p M-LGCNS-K8HXX -i aig300lgcns.bin	-o mcu.dat \n"
+           "     ah.exe --board AU1354 -v DH12-01 -i nk.bin -o LAN1234_nk.LGE \n"
+           "     ah.exe --cinfo sha1  --input nk.bin --output LAN1234_nk.LGE  \n"
+           "     ah.exe --version BLTMCAM1.0 --input nk.bin --output LAN1234_nk.LGE  \n"
+           "     ah.exe --mcu 5.0.00(13E) --cinfo sha256 -i nk.bin -o LAN1234_nk.LGE  \n"
+           "     ah.exe --model LAN1234 --mcu 5.0.00(13E) --cinfo sha256 -i nk.bin -o LAN1234_nk.LGE  \n"
+           "     ah.exe -p M-LGCNS-K8HXX -i aig300lgcns.bin -o mcu.dat \n"
            "     ah.exe --mcu M-LGCNS-K8HXX -i aig300lgcns.bin -o mcu.dat \n"
            "\n"
 		   "--[ Convert Float number to Hexa ]------ -------------------------------------------------------------------------\n"
@@ -828,7 +828,14 @@ int main(int argc, char *argv[])
 	
 	int is2ndFileSize=0;
 	int is2ndEndian=0; // 1:little, 2:big endian
-	int isAttach = 0;
+
+	//int isAttach = 0;
+	int isAttachVer = 0; /* ATT_VERSION or ATT_MCU_32BYTE */
+	int isAttachBrd = 0; /* ATT_BOARD */
+	int isAttachMdl = 0; /* ATT_MODEL */
+	int isAttachCRC = 0; /* ATT_DATEorCRC */
+	
+	
 	int isDelHdr = 0, isFillSize = 0; /* 2009.10.09, CRC Generator */
 	int isCRC = 0, isCRCtype = 0;
 	int insertCRC=0; // 2017.04.04
@@ -1098,7 +1105,13 @@ int main(int argc, char *argv[])
 	/// --- parameters initialized -------------------------
 	/// -----------------------------------------------
 	opt_ok          = 0; /* clear */
-	isAttach        = 0; 
+
+	//isAttach        = 0; 
+	isAttachVer     = 0; /* ATT_VERSION or ATT_MCU_32BYTE */
+	isAttachBrd     = 0; /* ATT_BOARD */
+	isAttachMdl     = 0; /* ATT_MODEL */
+	isAttachCRC     = 0; /* ATT_DATEorCRC */
+	
 	isDelHdr        = 0; /* default : Adding Header */
 	isIgnoreBothFile= 0; /// ignore input & output
 	isIgnoreInFile  = isIgnoreOuFile = 0; // 2020.06.12
@@ -2544,18 +2557,13 @@ int main(int argc, char *argv[])
 
 		        break;
 
-	#ifdef  __ING___
-			case 'r': /* BMP reverse */
-				isBMPreverse = 1;
-				break;
-	#endif
-
 	
 		    case 'b': /* Attach Header : 16 characters */
 				if(optarg) 
 				{
 					olen = 0;
-					isAttach |= ATT_BOARD;
+					//isAttach |= ATT_BOARD;
+					isAttachBrd = ATT_BOARD; /* ATT_BOARD */
 
 			        memcpy(str_boardName, optarg, MAX_CHARS);
 					olen = strlen(str_boardName);
@@ -2564,7 +2572,7 @@ int main(int argc, char *argv[])
 
 					if( olen > MAX_CHARS )
 					{
-						printf("\n\n[++ERROR++] Board Name length is too long (%d Chars).. Max:16 Bytes\n\n", olen );
+						printf("\n\n[++ERROR++] Board Name length is too long.. Max:%d Bytes\n\n", MAX_CHARS );
 					}
 				}
 				else
@@ -2584,7 +2592,9 @@ int main(int argc, char *argv[])
 				if(optarg) 
 				{
 					olen = 0;
-					isAttach |= ATT_MODEL;
+
+					//isAttach |= ATT_MODEL;
+					isAttachMdl = ATT_MODEL; /* ATT_MODEL */
 
 					if(titlen)
 					{
@@ -2599,7 +2609,7 @@ int main(int argc, char *argv[])
 
 						if( olen > MAX_CHARS )
 						{
-							printf("\n\n[++ERROR++] Module Name length is too long (%d Chars).. Max:16 Bytes\n\n", olen );
+							printf("\n\n[++ERROR++] Module Name length is too long.. Max:%d Bytes\n\n", MAX_CHARS );
 						}
 					}
 
@@ -2638,12 +2648,15 @@ int main(int argc, char *argv[])
 
 					strcpy(str_hash, str_crcAdd);
 
+
+					isAttachCRC = ATT_DATEorCRC; /* ATT_DATEorCRC */
+
 					if( 0==strcasecmp( str_crcAdd, "date" ) ) // inserted date
 				    {
 				    	int i;
 				    	time_t 	sys_t;
 
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 
 				    	time( &sys_t );
 				    	strcpy( str_buildDate, ctime( &sys_t ) );
@@ -2695,7 +2708,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1;
 						isCRCtype = HDR_CRC16;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.04.27
 						printf(" is inserted as signed image.");
 					}
@@ -2704,7 +2717,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1;
 						isCRCtype = HDR_KSC_CRC16;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.04.27
 						printf(" is inserted as signed image.");
 					}
@@ -2713,7 +2726,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1;
 						isCRCtype = HDR_CRC16CCITT;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.04.27
 						printf(" is inserted as signed image.");
 					}
@@ -2722,7 +2735,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1;
 						isCRCtype = HDR_CRC32;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.04.27
 						printf(" is inserted as signed image.");
 					}
@@ -2731,7 +2744,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1;
 						isCRCtype = HDR_CRC64;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.04.27
 						printf(" is inserted as signed image.");
 					}
@@ -2740,7 +2753,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1;
 						isCRCtype = HDR_CRC64_ISC;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.04.27
 						printf(" is inserted as signed image.");
 					}
@@ -2749,7 +2762,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_ADLER32;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.04.27
 						printf(" is inserted as signed image.");
 					}	
@@ -2758,7 +2771,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_JOAAT;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}
@@ -2767,7 +2780,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHA1;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);  
 						printf(" is inserted as signed image.");
 					}	
@@ -2776,7 +2789,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHA224;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.11.21
 						printf(" is inserted as signed image.");
 					}	
@@ -2785,7 +2798,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHA256;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.11.21
 						printf(" is inserted as signed image.");
 					}	
@@ -2794,7 +2807,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHA384;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.11.21
 						printf(" is inserted as signed image.");
 					}	
@@ -2803,7 +2816,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHA512;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.11.21
 						printf(" is inserted as signed image.");
 					}	
@@ -2812,7 +2825,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHA3_224;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2821,7 +2834,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHA3_256;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2830,7 +2843,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHA3_384;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2839,7 +2852,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHA3_512;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2848,7 +2861,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHAKE128;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2857,7 +2870,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_SHAKE256;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2866,7 +2879,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_MD5;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.11.21
 						printf(" is inserted as signed image.");
 					}	
@@ -2875,7 +2888,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_MD6;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.11.21
 						printf(" is inserted as signed image.");
 					}	
@@ -2884,7 +2897,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_MD2; // 2020.07.15
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.11.21
 						printf(" is inserted as signed image.");
 					}	
@@ -2893,7 +2906,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_MD4; // 2020.07.15
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]); // 2017.11.21
 						printf(" is inserted as signed image.");
 					}	
@@ -2903,7 +2916,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_BLAKE224;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2912,7 +2925,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_BLAKE256;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2921,7 +2934,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_BLAKE384;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2930,7 +2943,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_BLAKE512;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2942,7 +2955,7 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_RMD128;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
@@ -2951,14 +2964,14 @@ int main(int argc, char *argv[])
 						isCRC	  = 0;
 						insertCRC = 1; 
 						isCRCtype = HDR_RMD160;
-						isAttach |= ATT_DATEorCRC;
+						//isAttach |= ATT_DATEorCRC;
 						iUpper = isupper(str_crcAdd[0]);
 						printf(" is inserted as signed image.");
 					}	
 				#endif		
 					else
 					{
-						printf("\n\n WARNING:wrong option --cinfo [string]. check option (%s) \r\n", str_crcAdd);
+						printf("\n\n WARNING:wrong option --cinfo [string]. Check option (%s) \r\n", str_crcAdd);
 
 						beep(700,100);
 						AllFilesClosed();
@@ -2969,7 +2982,7 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-					printf("\n\n WARNING:wrong option --cinfo [string]. check option\r\n");
+					printf("\n\n WARNING:wrong option --cinfo [string]. Check options\r\n");
 					beep(700,100);
 					AllFilesClosed();
 					exit(0);
@@ -2983,7 +2996,9 @@ int main(int argc, char *argv[])
 				if(optarg) 
 				{
 					olen = 0;
-					isAttach |= ATT_VERSION;
+
+					//isAttach |= ATT_VERSION;
+					isAttachVer = ATT_VERSION; /* ATT_VERSION or ATT_MCU_32BYTE */
 
 					memcpy(str_versionName, optarg, MAX_VERSION_LEN);
 					olen = strlen(str_versionName);
@@ -2992,7 +3007,7 @@ int main(int argc, char *argv[])
 
 					if( olen > MAX_VERSION_LEN )
 					{
-						printf("\n\n[++ERROR++] Version Name length is too long (%d Chars).. Max:%d Bytes\n\n", olen, MAX_VERSION_LEN );
+						printf("\n\n[++ERROR++] Version Name length is too long.. Max:%d Bytes\n\n", MAX_VERSION_LEN );
 					}
 				}
 				else
@@ -3014,7 +3029,9 @@ int main(int argc, char *argv[])
 				if(optarg) 
 				{
 					olen = 0;
-					isAttach = ATT_MCU_VER_ONLY;
+
+					//isAttach = ATT_MCU_32BYTE;
+					isAttachVer = ATT_MCU_32BYTE; /* ATT_VERSION or ATT_MCU_32BYTE */
 
 					memcpy(str_MCUversion, optarg, MAX_32CHARS);
 					olen = strlen(str_MCUversion);
@@ -3658,7 +3675,8 @@ int main(int argc, char *argv[])
 
 	/* 1. Header (Version) ∫Ÿ¿Ã±‚ */
 	if(    (0 == isDelHdr) 
-		&& ( ((ATT_VERSION|ATT_DATEorCRC|ATT_MODEL|ATT_BOARD)==isAttach) || ATT_MCU_VER_ONLY==isAttach) /* 2022-10-18 */
+		/* && ( ((ATT_VERSION|ATT_DATEorCRC|ATT_MODEL|ATT_BOARD)==isAttach) || ATT_MCU_32BYTE==isAttach) */ /* 2022-10-18 */
+		&& ( (ATT_VERSION==isAttachVer||ATT_MCU_32BYTE==isAttachVer)||(ATT_DATEorCRC==isAttachCRC)||(ATT_MODEL==isAttachMdl)||(ATT_BOARD==isAttachBrd) )
 		&& (0 == isIgnoreBothFile) /// 2014.07.14
 		&& (0 == isCRC) 
 		&& (0 == isFillSize) 
@@ -3737,90 +3755,22 @@ int main(int argc, char *argv[])
 
 	   )
 	{
+
 	
-		len_attach_hdr = 0; // 2020.07.07, Total Header Length
-
-	if(ATT_MCU_VER_ONLY == isAttach) /* 2022-10-18 */
-	{
-		
-		if(inpfile) { fclose(inpfile); inpfile=NULL; } // file close for checksum
+	/* =================================== */
+	len_attach_hdr = 0; // 2020.07.07, Total Header Length
 
 
-		// --------------------------------------------------
-		/* ++++++++ MCU VERSION ONLY  +++++++++++++++++++++++++++ */
-		/* +++++++++++++++++++++++++++++++++++++++++++++++ */
-		len_version_name = strlen(str_MCUversion);
-		if( len_version_name < MAX_32CHARS )
-		{
-			if( len_version_name == 0 ) 
-			{ 
-				memcpy(str_MCUversion, DUMMY_FILL, DUMMY_FILL_LEN); 
-				len_version_name = DUMMY_FILL_LEN; 
-			}
-			if(outfile) fprintf(outfile,"%s", str_MCUversion);
-			while( len_version_name < MAX_32CHARS )
-			{
-				if(outfile) fprintf(outfile,"%c",SPACE_FILL4);
-				len_version_name++;
-			}
-		}
-		else
-		{
-			count=0;
-			while( count < MAX_32CHARS )
-			{
-				if(outfile) fprintf(outfile,"%c",str_MCUversion[count] );
-				count++;
-			}
-		}
+	/* ++++++++ BOARD NAME +++++++++++++++++++++++++++ */
+	/* step1 : board name (16 characters) : ex) PI2000 */
+	/* +++++++++++++++++++++++++++++++++++++++++++++++ */
 
-		len_attach_hdr += MAX_32CHARS; // for MCU Version Name
-			
-		
-		// ==========================================
-		// ==========================================
-		/* ========== INPUT FILE ================= */
-		if( NULL == (inpfile = fopen( infile_name, "rb")) ) 
-		{
-			beep(700,100);
-			printf("\n\n[+ERROR+] Can not open input file[%s] \n",infile_name);
-			if( NULL == infile_name || infile_name[0] == 0x00)
-				printf("[+ERROR+] Must be input file with -i or --input option. \n" );
-		
-			AllFilesClosed();
-		
-			exit(0); /// help();
-			return 0;
-		}
-		else
-		{
-			/// OK ---
-			if (fstat(fileno(inpfile), &file_statbuf) < 0) 
-			{ 
-				printf("\n\n[++ERROR++]Cannot stat [%s]\n", infile_name ); 
-		
-				AllFilesClosed(); // 2020.07.10
-				exit(0);
-				return 2; 
-			}	 
-		}
-		/* ========== INPUT FILE ================= */
-		// ==========================================
-		// ==========================================
-
-	}
-	else
+	if( ATT_BOARD==isAttachBrd )
 	{
 
 		if( 0x00 == str_boardName[0] )
 	        printf("\n>>Board Name (default)  : %s", DUMMY_FILL);
-		if( 0x00 == str_moduleName[0] )
-	        printf("\n>>Model Name (default)  : %s", DUMMY_FILL);
 
-
-		/* ++++++++ BOARD NAME +++++++++++++++++++++++++++ */
-		/* step1 : board name (16 characters) : ex) PI2000 */
-		/* +++++++++++++++++++++++++++++++++++++++++++++++ */
 		len_board_name = strlen(str_boardName);
 		if( len_board_name < MAX_CHARS )
 		{
@@ -3846,10 +3796,21 @@ int main(int argc, char *argv[])
 			}
 		}
 		len_attach_hdr += MAX_CHARS; // for Board Name
+
+	}
+
+
+
+	/* ++++++++ MODEL NAME +++++++++++++++++++++++++++ */
+	/* step2 : Model name (16 characters) */
+	/* +++++++++++++++++++++++++++++++++++++++++++++++ */
+
+	if( ATT_MODEL==isAttachMdl )
+	{
+
+		if( 0x00 == str_moduleName[0] )
+	        printf("\n>>Model Name (default)  : %s", DUMMY_FILL);
 		
-		/* ++++++++ MODEL NAME +++++++++++++++++++++++++++ */
-		/* step2 : Model name (16 characters) */
-		/* +++++++++++++++++++++++++++++++++++++++++++++++ */
 		len_module_name = strlen(str_moduleName);
 		if( len_module_name < MAX_CHARS )
 		{
@@ -3876,44 +3837,92 @@ int main(int argc, char *argv[])
 		}
 		len_attach_hdr += MAX_CHARS; // for Module Name
 
+	}
 
-		// --------------------------------------------------
-		/* ++++++++ VERSION NAME +++++++++++++++++++++++++++ */
-		/* step4 : Version name (16 characters) -> 
-		   step3 : Version name 32 Bytes : 2017.11.21 */
-		/* +++++++++++++++++++++++++++++++++++++++++++++++ */
-		len_version_name = strlen(str_versionName);
-		if( len_version_name < MAX_VERSION_LEN )
+
+
+	// --------------------------------------------------
+	/* ++++++++ VERSION NAME +++++++++++++++++++++++++++ */
+	/* step4 : Version name (16 characters) -> 
+	   step3 : Version name 32 Bytes : 2017.11.21 */
+	/* +++++++++++++++++++++++++++++++++++++++++++++++ */
+
+	if( (ATT_VERSION==isAttachVer) || (ATT_MCU_32BYTE==isAttachVer) )
+	{
+
+		if( ATT_VERSION==isAttachVer ) /* 16Bytes */
 		{
-			if( len_version_name == 0 ) 
-			{ 
-				memcpy(str_versionName, DUMMY_FILL, DUMMY_FILL_LEN); 
-				len_version_name = DUMMY_FILL_LEN; 
-			}
-			if(outfile) fprintf(outfile,"%s", str_versionName);
-			while( len_version_name < MAX_VERSION_LEN )
+			len_version_name = strlen(str_versionName);
+			if( len_version_name < MAX_VERSION_LEN )
 			{
-				if(outfile) fprintf(outfile,"%c",SPACE_FILL4);
-				len_version_name++;
+				if( len_version_name == 0 ) 
+				{ 
+					memcpy(str_versionName, DUMMY_FILL, DUMMY_FILL_LEN); 
+					len_version_name = DUMMY_FILL_LEN; 
+				}
+				if(outfile) fprintf(outfile,"%s", str_versionName);
+				while( len_version_name < MAX_VERSION_LEN )
+				{
+					if(outfile) fprintf(outfile,"%c",SPACE_FILL4);
+					len_version_name++;
+				}
 			}
+			else
+			{
+				count=0;
+				while( count < MAX_VERSION_LEN )
+				{
+					if(outfile) fprintf(outfile,"%c",str_versionName[count] );
+					count++;
+				}
+			}
+
+			len_attach_hdr += MAX_VERSION_LEN; // for Version Name
+
 		}
-		else
+		else if(ATT_MCU_32BYTE == isAttachVer) /* 32Bytes 2022-10-18 */
 		{
-			count=0;
-			while( count < MAX_VERSION_LEN )
+		
+			len_version_name = strlen(str_MCUversion);
+			if( len_version_name < MAX_32CHARS )
 			{
-				if(outfile) fprintf(outfile,"%c",str_versionName[count] );
-				count++;
+				if( len_version_name == 0 ) 
+				{ 
+					memcpy(str_MCUversion, DUMMY_FILL, DUMMY_FILL_LEN); 
+					len_version_name = DUMMY_FILL_LEN; 
+				}
+				if(outfile) fprintf(outfile,"%s", str_MCUversion);
+				while( len_version_name < MAX_32CHARS )
+				{
+					if(outfile) fprintf(outfile,"%c",SPACE_FILL4);
+					len_version_name++;
+				}
 			}
+			else
+			{
+				count=0;
+				while( count < MAX_32CHARS )
+				{
+					if(outfile) fprintf(outfile,"%c",str_MCUversion[count] );
+					count++;
+				}
+			}
+
+			len_attach_hdr += MAX_32CHARS; // for MCU Version Name
+			
 		}
 
-		len_attach_hdr += MAX_VERSION_LEN; // for Version Name
+	}
 	
 
+	/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+	/* ============================================================ */
+	/* CRC/SHA1/SHA256/MD5 etc HEADER INSERTION     ++++++++++++++ */
+	/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-		/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-		/* HEADER INSERTION                  +++++++++++++++++++++++++ */
-		/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+	if( ATT_DATEorCRC==isAttachCRC )
+	{
+
 		if( (1 == insertCRC) )
 		{
 			unsigned __int64  kll = 0UL;
@@ -4836,7 +4845,6 @@ int main(int argc, char *argv[])
 				len_attach_hdr += (BLAKE512_LEN*2);
 
 			}
-
 		#endif
 
 		#if defined(RIPEMD160) || defined(RIPEMD128)	
@@ -4933,6 +4941,7 @@ int main(int argc, char *argv[])
 
 
 				memset( inbuf, 0x00, sizeof(inbuf) ); // 2018.06.15
+				memset( outTxt, 0x00, sizeof(outTxt) ); // 2018.06.15
 					
 				//Initialize the RIPEMD-160 context
 				MD160init(MDbuf);
@@ -5065,10 +5074,10 @@ int main(int argc, char *argv[])
 
 		}
 		/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-		/* HEADER INSERTION */
+		/* HEADER INSERTION ENDED */
 		/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 	}
-
+	
 
 		
 
@@ -5085,14 +5094,7 @@ int main(int argc, char *argv[])
 				fwrite(read_buf, sizeof(unsigned char), fr_size, outfile); 
 			}
 
-			if(ATT_MCU_VER_ONLY == isAttach) /* 2022-10-18 */
-			{
-				printf("\nHDR>> Attached Header!! (MCU HDR: %s) - OK", str_MCUversion);
-			}
-			else
-			{
-				printf("\nHDR>> Attached Header!! (%dBytes) - OK", len_attach_hdr);
-			}
+			printf("\nHDR>> Attached Header!! (%dBytes) - OK", len_attach_hdr);
 		}
 		else
 		{
@@ -13140,7 +13142,7 @@ int main(int argc, char *argv[])
 
 
 		// ================= MODEL NAME ====================================
-		if( ATT_MODEL == (isAttach&ATT_MODEL) )
+		if( ATT_MODEL == isAttachMdl )
 		{
 			/* ++++++++ MODEL NAME +++++++++++++++++++++++++++ */
 			/* step2 : Model name (16 characters) */
@@ -13173,37 +13175,68 @@ int main(int argc, char *argv[])
 
 
 		// ================= VERSION NAME ====================================
-		if( ATT_VERSION == (isAttach&ATT_VERSION) )
+		if( (ATT_VERSION == isAttachVer) || (ATT_MCU_32BYTE == isAttachVer) )
 		{
 
-			// --------------------------------------------------
-			/* ++++++++ VERSION NAME +++++++++++++++++++++++++++ */
-			/* step4 : Version name (16 characters) -> 
-			   step3 : Version name 32 Bytes : 2017.11.21 */
-			/* +++++++++++++++++++++++++++++++++++++++++++++++ */
-			len_version_name = strlen(str_versionName);
-			if( len_version_name < MAX_VERSION_LEN )
+			if( ATT_VERSION == isAttachVer )
 			{
-				if( len_version_name == 0 ) 
-				{ 
-					memcpy(str_versionName, DUMMY_FILL, DUMMY_FILL_LEN); 
-					len_version_name = DUMMY_FILL_LEN; 
-				}
-				if(outfile) fprintf(outfile,"%s", str_versionName);
-				while( len_version_name < MAX_VERSION_LEN )
+				// --------------------------------------------------
+				/* ++++++++ VERSION NAME +++++++++++++++++++++++++++ */
+				/* step4 : Version name (16 characters) -> 
+				   step3 : Version name 32 Bytes : 2017.11.21 */
+				/* +++++++++++++++++++++++++++++++++++++++++++++++ */
+				len_version_name = strlen(str_versionName);
+				if( len_version_name < MAX_VERSION_LEN )
 				{
-					if(outfile) fprintf(outfile,"%c",SPACE_FILL4);
-					len_version_name++;
+					if( len_version_name == 0 ) 
+					{ 
+						memcpy(str_versionName, DUMMY_FILL, DUMMY_FILL_LEN); 
+						len_version_name = DUMMY_FILL_LEN; 
+					}
+					if(outfile) fprintf(outfile,"%s", str_versionName);
+					while( len_version_name < MAX_VERSION_LEN )
+					{
+						if(outfile) fprintf(outfile,"%c",SPACE_FILL4);
+						len_version_name++;
+					}
+				}
+				else
+				{
+					count=0;
+					while( count < MAX_VERSION_LEN )
+					{
+						if(outfile) fprintf(outfile,"%c",str_versionName[count] );
+						count++;
+					}
 				}
 			}
-			else
+			else if( ATT_MCU_32BYTE == isAttachVer )
 			{
-				count=0;
-				while( count < MAX_VERSION_LEN )
+				len_version_name = strlen(str_MCUversion);
+				if( len_version_name < MAX_32CHARS )
 				{
-					if(outfile) fprintf(outfile,"%c",str_versionName[count] );
-					count++;
+					if( len_version_name == 0 ) 
+					{ 
+						memcpy(str_MCUversion, DUMMY_FILL, DUMMY_FILL_LEN); 
+						len_version_name = DUMMY_FILL_LEN; 
+					}
+					if(outfile) fprintf(outfile,"%s", str_MCUversion);
+					while( len_version_name < MAX_32CHARS )
+					{
+						if(outfile) fprintf(outfile,"%c",SPACE_FILL4);
+						len_version_name++;
+					}
 				}
+				else
+				{
+					count=0;
+					while( count < MAX_32CHARS )
+					{
+						if(outfile) fprintf(outfile,"%c",str_MCUversion[count] );
+						count++;
+					}
+				}
+			
 			}
 
 		}
