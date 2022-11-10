@@ -40,7 +40,7 @@
 
 
 
-const char AttVersion[] = "3.5.0"; /* ver 3.5.0 : 2022.10.22 : Hex2bin checksum error display and fix */
+const char AttVersion[] = "3.5.1"; /* ver 3.5.0 : 2022.10.22 : Hex2bin checksum error display and fix */
 const char EmailText[]  = "tp.joo@daum.net";
 
 

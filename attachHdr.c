@@ -6875,7 +6875,7 @@ int main(int argc, char *argv[])
 
 					if (verbose) 
 					{
-						if(iVerbosType<2) fprintf(stderr,"Line%6d :0:Highest_Address: %#08x  \r", Record_Nb, Highest_Address);
+						if(iVerbosType<2) fprintf(stderr,"Line%6d :0:Highest_Address: %#08x  \n", Record_Nb, Highest_Address);
 						else fprintf(stderr,"Line%6d :0:Highest_Address: %#08x  \n", Record_Nb, Highest_Address);
 					}
 					break;
