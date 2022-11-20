@@ -21,6 +21,14 @@
 
 #include "common.h"
 #include "feature.h"
+#include "hash.h"
+
+
+
+
+extern int verbose;
+extern int g_iUpper;
+
 
 
 

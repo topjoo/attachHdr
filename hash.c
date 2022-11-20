@@ -25,6 +25,15 @@
 
 #include "common.h"
 #include "feature.h"
+#include "hash.h"
+
+
+
+int verbose = 0;
+int g_iUpper = -1;
+
+
+
 
 #if BLAKE_224_256_384_512_HASH
 
@@ -3943,14 +3952,18 @@ uint64_t end_ticks;
 
 void start_timer()
 {
+#if 0
   start_time = ((double)clock())/CLOCKS_PER_SEC;
   start_ticks = ticks();
+#endif
 }
 
 void end_timer()
 {
+#if 0
   end_time = ((double)clock())/CLOCKS_PER_SEC;
   end_ticks = ticks();
+#endif
 }
 
 int print_times = 0;
@@ -5034,7 +5047,7 @@ void sha224(const unsigned char *message, unsigned int len, unsigned char *diges
 #define SHA512_DIGEST_LENGTH		64
 #define SHA512_DIGEST_STRING_LENGTH	(SHA512_DIGEST_LENGTH * 2 + 1)
 
-
+#if 0
 /*** SHA-256/384/512 Context Structures *******************************/
 /* NOTE: If your architecture does not define either u_intXX_t types or
  * uintXX_t (from inttypes.h), you may need to define things by hand
@@ -5045,6 +5058,7 @@ typedef unsigned char      u_int8_t;	/* 1-byte  (8-bits)  */
 typedef unsigned int       u_int32_t;	/* 4-bytes (32-bits) */
 typedef unsigned long long u_int64_t;	/* 8-bytes (64-bits) */
 typedef unsigned short     u_int16_t;
+#endif
 
 /*
  * Most BSD systems already define u_intXX_t types, as does Linux.
@@ -6824,7 +6838,7 @@ uint64_t isc_crc64_update(uint64_t crc, const void *data, size_t len)
 	if( (NULL==data) )
 	{
 		printf("\n ERROR isc_crc64_update is erro ++ \n\n");
-		return;
+		return 0L;
 	}
 
 	while (len-- > 0U) 
@@ -7324,14 +7338,6 @@ unsigned int joaat_hash(unsigned int joaat_hash, unsigned char *key, size_t len)
     hash += (hash << 15);
     return hash;
 }
-
-
-
-#if 1 // CRC_CHECKSUM_API
-
-
-int verbose = 0;
-int g_iUpper = -1;
 
 
 
@@ -8120,7 +8126,7 @@ unsigned __int64 RunJoaat(char *infile_name, char *outfile_name, __int64 Fsize, 
 	//*Fsize = TotDLen; /* 인자로 값을 넘길경우,  맨마지막에 하라~~ else fclosed !!! */
 	return TotDLen;
 }
-#endif
+
 
 #endif // CRC_CHECKSUM
 

@@ -32,6 +32,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "hash.h"
+#include "defs.h"
 
 #if 0
 #define SNDERR(...) snd_lib_error(__FILE__, __LINE__, __FUNCTION__, 0, __VA_ARGS__) /**< Shows a sound error message. */
@@ -40,7 +42,7 @@
 
 
 
-const char AttVersion[] = "3.5.1"; /* ver 3.5.0 : 2022.10.22 : Hex2bin checksum error display and fix */
+const char AttVersion[] = "3.6.0"; /* ver 3.6.0 : 2022.11.13 : Shift Quality Data Sorting */
 const char EmailText[]  = "tp.joo@daum.net";
 
 
@@ -98,14 +100,24 @@ enum {
 
 
 
-#define LOG_ERR(format, ...) 		fprintf(stderr, format "\n", ## __VA_ARGS__)
-#define LOG_INF(format, ...)  		fprintf(stdout, format "\n", ## __VA_ARGS__)
-#define LOG_V(format, ...) 			fprintf(stderr, format, ## __VA_ARGS__)
+#define LOG_ERR(fmt, ...) 		fprintf(stderr, fmt "\n", ## __VA_ARGS__)
+#define LOG_INF(fmt, ...)  		fprintf(stdout, fmt "\n", ## __VA_ARGS__)
+#define LOG_V(fmt, ...) 		fprintf(stderr, fmt, ## __VA_ARGS__)
 
 
 #define COMMA_BUF_SIZE  			256 /// 2014.07.23
 
 
+#define DEBUG_LEVEL_	3
+#ifdef  DEBUG_LEVEL_
+#define dprta(n, fmt, args...)		if (DEBUG_LEVEL_ <= n) fprintf(stderr, "%s:%d,"fmt, __FILE__, __LINE__, ## args)
+#define dprt0(n, fmt)				if (DEBUG_LEVEL_ <= n) fprintf(stderr, "%s:%d,"fmt, __FILE__, __LINE__)
+#define dprtn(n, fmt, args...)		if (DEBUG_LEVEL_ <= n) fprintf(stderr, " "fmt, ## args)
+#else 
+#define dprta(n, fmt, args...)
+#define dprt0(n, fmt)
+#define dprtn(n, fmt, args...)
+#endif	/* DEBUG_LEVEL_ */
 
 
 
@@ -316,49 +328,6 @@ typedef struct _RGBTRIPLE			 // 24비트 비트맵 이미지의 픽셀 구조체
 
 
 
-
-#define ONE_KILO_BYTE 			1024.0
-#define ONE_MEGA_BYTE 			(1024*1024)
-#define HALF_MEGA_BYTE 			(512*1024)
-#define MAX_BUF_SIZ 			(50*(ONE_MEGA_BYTE)-HALF_MEGA_BYTE) /* NK.NB0 , EBOOT.NB0 size 변경시 수정후 building */
-
-#define RD_BUF_SIZ 				1024*10
-
-#define MULTI_IN_FILES_CNT 			(4096)
-#define LENGTH_OF_FILENAME			16 /* 16*16 -> 256 */
-#define MAX_CHARS 					16
-#define MAX_VERSION_LEN 			16 // 2017.12.12
-#define MAX_CRC_LEN_CODE 			16 // 2017.11.21
-#define MAX_HASH_CODE 				128 // 2017.11.21
-#define MAX_32CHARS 				32 // 2022-10-18
-
-#define MAX_FILENAME_LEN 			256
-
-#define SPACE_FILL1 		'\0'
-#define SPACE_FILL2 		'\0' //0xFF
-#define SPACE_FILL3 		'\0'
-#define SPACE_FILL4 		'\0'
-
-#define DUMMY_FILL 			"TOPJOOhdr"
-#define DUMMY_FILL_LEN 		9
-
-#define TRUE 		1
-#define FALSE 		0
-
-
-#define CHECK_BIT_IN 		0x01
-#define CHECK_BIT_OUT 		0x02
-
-
-#define ATT_VERSION 		0x0001 /* 16Bytes */
-#define ATT_DATEorCRC 		0x0002 /* 16Bytes or variable */
-#define ATT_MODEL 			0x0004 /* 16Bytes */
-#define ATT_BOARD 			0x0008 /* 16Bytes */
-
-#define ATT_MCU_32BYTE 		0x0010 /* 32Bytes */
-
-
-#define EXTRACT_FILE_SIZE 		1024
 
 
 #define MONTH_LEN 	12

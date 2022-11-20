@@ -18,10 +18,11 @@
 #include <assert.h>	/* assert() */
 #include <unistd.h>
 #include <memory.h> 
+#include <ctype.h> 
 
 #include "common.h"
 #include "feature.h"
-
+#include "defs.h"
 
 
 
@@ -173,15 +174,6 @@ unsigned int    Record_Count, Record_Checksum;
 char str_address[MAX_CHARS+1];
 
 
-
-
-
-void AllFilesClosed(void)
-{
-	if(inpfile) { fclose(inpfile);	inpfile=NULL; }
-	if(outfile) { fclose(outfile);	outfile=NULL; }
-	if(data_buf){ free(data_buf);	data_buf=NULL; }
-}
 
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1065,7 +1057,12 @@ void Allocate_Memory_And_Rewind(void)
 		printf("The parsed binary length is %.2fMB. Maximum binary limit is %.2fMBytes!! \n", (float)Max_Length/(1024.0*1024.0), MAX_BIN_LENGTH_SIZE/1024.0/1024.0 );
 		printf("Use the Zero-Address Forced option!!! ( --zeroforced ) \n\n"); 
 
-		AllFilesClosed();		
+		//AllFilesClosed();		
+
+		if(inpfile) { fclose(inpfile);	inpfile=NULL; }
+		if(outfile) { fclose(outfile);	outfile=NULL; }
+		if(data_buf){ free(data_buf);	data_buf=NULL; }
+
 		exit(0);
 		return;
 	}
