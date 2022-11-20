@@ -83,7 +83,15 @@
  *     2) command as below:
  *        gcc -o AttachHdr -mno-cygwin AttachHdr.c  or
  *        gcc-3  -o AttachHdr -mno-cygwin AttachHdr.c 
- *        x86_64-w64-mingw32-gcc  -o AttachHdr AttachHdr.c
+ *
+ * ** NEW compiler : x86_64-w64-mingw32-gcc -o shift shift.c
+ *
+ * $ x86_64-w64-mingw32-gcc --version
+ * x86_64-w64-mingw32-gcc (GCC) 11.3.0
+ * Copyright (C) 2021 Free Software Foundation, Inc.
+ * This is free software; see the source for copying conditions.	There is NO
+ * warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
  *
  * How to profiling
  *     1) gcc -pg -g -o AttachHdr -mno-cygwin AttachHdr.c 
@@ -751,9 +759,9 @@ void AllFilesClosed(void)
 
 #if SHIFT_QUALITY_DATA_SORTING /* 2022-11-13 */
 
-static double fAPSpwrLvl = 3.0f;
+static double fAPSpwrLvl = -1.0f;
 
-char shift_outfile[MAX_CHARS*LENGTH_OF_FILENAME+1];
+char shift_file[MAX_CHARS*LENGTH_OF_FILENAME+1];
 
 /* timeShift, iPATs05, arrPATs_ModeID[iPATs05].ModeID, tqi, curGear08, Aps09, sNo10, tgtGear11, 
 iShift, iShiType12, arrGear[iShiType12].sGear, TqFr, ShiftPh, sNe, sNt16, Long_Accel, gearRatio, rpmG */
@@ -957,6 +965,7 @@ const tGear_type arrGear[162] = {
 		{161,   "(sUNKNOWN)" },
 	};	
 
+#define MODE_ID_NUMS 			72
 
 typedef struct _tPATs_ {
 		int 	iPATs;
@@ -964,7 +973,10 @@ typedef struct _tPATs_ {
 		char 	ModeNm[20];
 } tPATs_ModeType;
 
-const tPATs_ModeType arrPATs_ModeID[72] = {
+unsigned int chkPATs_ModeID[MODE_ID_NUMS] = {0,};
+unsigned int totChkModeID = 0;
+
+const tPATs_ModeType arrPATs_ModeID[MODE_ID_NUMS] = {
 		{  0,   "(md_HOT)"     ,   "HOT"     },
 		{  1,   "(md_WUP)"     ,   "WUP"     },
 		{  2,   "(md_MNL)"     ,   "MNL"     },
@@ -1044,11 +1056,13 @@ const tPATs_ModeType arrPATs_ModeID[72] = {
 #define MODE_ECO 		9  /* 9: (md_ECO) */
 #define MODE_SPT 		25 /* 25 : (md_SPT) */
 #define MODE_UNKOWN 	-1
+#define MODE_FILE_SAVE 	999 /* Mode IDº°·Î file saving */
 
-#define SHIFT_SEQ_UP 	11 /* sequential up shift */
-#define SHIFT_SEQ_DN 	12
-#define SHIFT_SKIP_UP 	21 /* skip up shift */
-#define SHIFT_SKIP_DN 	22
+	
+#define SHIFT_UP 		11 /* SEQ_UP, sequential up shift */
+#define SHIFT_DN 		12 /* SEQ_DN */
+#define SHIFT_SKIP_UP 	21 /* SKIP_UP skip up shift */
+#define SHIFT_SKIP_DN 	22 /* SKIP_DN */
 
 #define PWR_ON 			10
 #define PWR_OFF 		20
@@ -1089,7 +1103,7 @@ double  ApsTble[APS_TABLE_BUM] = {
 
 
 #if SHIFT_QUALITY_DATA_SORTING /* 2022-11-13 */
-int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d, int e, int f, int g)
+int ShiftQualData(int SkipLine01, int aiPATs05, int shiftDir03, int iPwrOnOff04, int d, int e, int f, int iModeID08)
 {
 	FILE *shiFile=NULL;
 	int ii=0;
@@ -1164,6 +1178,7 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 
 	memset(QualData, 0x00, sizeof(QualData) );
 
+	memset(chkPATs_ModeID, 0x00, sizeof(chkPATs_ModeID) );
 
 	iOnce_S0	= TRUE;
 	iOnce_SS	= TRUE;
@@ -1193,24 +1208,37 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 	printf("      time        OTS      vsp      TqStnd iPAT ModeID      EngTemp    tqi    curG    Aps09      sNo   tgtG iShiTy ShiS     TqFr   ShiftPh    Ne        Nt      Accel      gRatio     rpm \n");
 #endif
 
-	printf("     time   iPAT  ModeID         iShi txt        Aps    timeDiff      LAccel  sNt      sNe \n");
+
+	if( -1.0 == fAPSpwrLvl ) 
+	{
+		fAPSpwrLvl = 3.0f; /* default value setting */
+		fprintf(stderr,">>APS default lvl : %.2lf%% -- default(3\%~5\%) \n", fAPSpwrLvl );
+	}
+
+	
+	if(outfile)
+	fprintf(outfile,"     time   iPAT  ModeID         iShi txt        Aps    timeDiff      LAccel  sNt      sNe \n");
 
 
 	/* ==================================================================== */
 	/* get file  */
+	fprintf(stderr,"\n");
 	fprintf(stderr,">>ModeID %s Sorting... \n", arrPATs_ModeID[aiPATs05].ModeID );			
-	fprintf(stderr,">>shiftDirection (%d)  \n", shiftDir );			
+	fprintf(stderr,">>shift Direction (%s)  \n", (shiftDir03==SHIFT_UP?"UP":(shiftDir03==SHIFT_DN?"DOWN": \
+		(shiftDir03==SHIFT_SKIP_DN?"Skip_Down":(shiftDir03==SHIFT_SKIP_UP?"Skip_Up":"Unknown"))) ));			
+
+
 
 	/* ===================================================================================== */
-	if( (aiPATs05>=0 && aiPATs05<71) && (strlen(shift_outfile)>0) )
+	if( (aiPATs05>=0 && aiPATs05<71) && (strlen(shift_file)>0) )
 	{
 		isNaming = 0;
-		for(ii=strlen(shift_outfile)-1; ii>0; ii--)
+		for(ii=strlen(shift_file)-1; ii>0; ii--)
 		{
-			if( shift_outfile[ii]=='.' ) 
+			if( shift_file[ii]=='.' ) 
 			{
-				shift_outfile[ii+1] = '\0';
-				strcat(shift_outfile, arrPATs_ModeID[aiPATs05].ModeNm);
+				shift_file[ii+1] = '\0';
+				strcat(shift_file, arrPATs_ModeID[aiPATs05].ModeNm);
 				isNaming = 1;
 				break;
 			}
@@ -1218,12 +1246,12 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 
 		if( 0==isNaming )
 		{
-			strcat(shift_outfile, ".");
-			strcat(shift_outfile, arrPATs_ModeID[aiPATs05].ModeNm);
+			strcat(shift_file, ".");
+			strcat(shift_file, arrPATs_ModeID[aiPATs05].ModeNm);
 		}
 
 		// mkdir OK
-		if( NULL == (shiFile = fopen( shift_outfile, "wb"))	)	
+		if( NULL == (shiFile = fopen( shift_file, "wb"))	)	
 		{
 			// FAIL
 			printf("\n\nCan not create folder & output file \n\n" );
@@ -1245,8 +1273,11 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 	/* ===================================================================================== */
 
 	
+	if(MODE_FILE_SAVE==iModeID08)
+	{
+	}
 
-		
+
 
 	do
 	{
@@ -1258,7 +1289,7 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 		if( NULL == fgets( QualData, QUAL_DATA_MAX_SIZE, inpfile ) )
 		{
 			fclose(shiFile);
-			fprintf(stderr,">>aiPATs05(%s) Sorting Completed...\r\n", arrPATs_ModeID[aiPATs05].ModeID ); 			
+			fprintf(stderr,">>PATs-ModeID %s Sorting Completed...\r\n", arrPATs_ModeID[aiPATs05].ModeID ); 			
 			break;
 		}
 
@@ -1302,21 +1333,23 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 			}
 			/* === 1 STEP : record (17 items check) =============== */
 
+			chkPATs_ModeID[iPATs05]++; /* ModeID Counts */
+			//printf("Mode ID %d => %d \n", iPATs05, chkPATs_ModeID[iPATs05] );
 
 			/* === 2 STEP : SKIP record check ===================== */
 			if(iItemCurOK)
 			{
-				if(!SkipLine) 
+				if(!SkipLine01) 
 				{
-					SkipLine = 0;
+					SkipLine01 = 0;
 					iSave = 1;
 				}
-				else if(iItemCurOK && SkipLine>0)
+				else if(iItemCurOK && SkipLine01>0)
 				{
-					if( 0==(iOKcount % (SkipLine+1)) ) 
+					if( 0==(iOKcount % (SkipLine01+1)) ) 
 						iSave = 1;
 					else
-						iSave = 0; /* Line Skip */
+						iSave = 0;
 				}
 				else 
 				{
@@ -1348,12 +1381,14 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 
 			/* === 3 STEP : ModeID check ===================== */
 			if(aiPATs05!=iPATs05)
+			{
 				continue; // reading Next item because of no same ModeID item
+			}
 			/* === 3 STEP : ModeID check ===================== */
 			
 
 			/* === 4 STEP : APS Power On/Off Level check ========== */
-			if( PWR_ON==iPwrOnOff )
+			if( PWR_ON==iPwrOnOff04 )
 			{
 				if(Aps09 >= fAPSpwrLvl) //APS_PWR_ON_VAL)
 				{
@@ -1364,7 +1399,7 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 					continue; // reading Next item because of no same ModeID item
 				}
 			}
-			else if( PWR_OFF==iPwrOnOff ) 
+			else if( PWR_OFF==iPwrOnOff04 ) 
 			{
 				if(Aps09 < fAPSpwrLvl) // APS_PWR_ON_VAL)
 				{
@@ -1401,10 +1436,10 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 			gearShiftOne = -1.0f;
 			gearShiftTwo = -1.0f;
 
-			if( (SHIFT_SEQ_UP == shiftDir) || (SHIFT_SEQ_DN == shiftDir) )
+			if( (SHIFT_UP == shiftDir03) || (SHIFT_DN == shiftDir03) )
 			{		
-				if( SHIFT_SEQ_UP == shiftDir ) { icGear=1; itGear=0; }
-				if( SHIFT_SEQ_DN == shiftDir ) { icGear=0; itGear=1; }
+				if( SHIFT_UP == shiftDir03 ) { icGear=1; itGear=0; }
+				if( SHIFT_DN == shiftDir03 ) { icGear=0; itGear=1; }
 
 				if( (curGear08 != tgtGear11) && (curGear08+icGear == tgtGear11+itGear) )
 				{
@@ -1455,7 +1490,7 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 					iShift = 0;
 				}
 			}
-			else if( (SHIFT_SKIP_UP == shiftDir) || (SHIFT_SKIP_DN== shiftDir) )
+			else if( (SHIFT_SKIP_UP==shiftDir03) || (SHIFT_SKIP_DN==shiftDir03) )
 			{
 			
 			}
@@ -1473,9 +1508,9 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 
 			if( iItemCurOK && iShift && iShiftAPS )
 			{
-				switch( shiftDir )
+				switch( shiftDir03 )
 				{
-					case SHIFT_SEQ_UP:
+					case SHIFT_UP:
 						if( iOnce_SB && (g_SStime<timeShift) && (gearShiftOne <= -30.0) ) /* Shift Begin (SB) -30 rpm under */
 						{
 							//iOnce_SB = FALSE;
@@ -1493,7 +1528,7 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 						}
 						break;
 						
-					case SHIFT_SEQ_DN:
+					case SHIFT_DN:
 						if( iOnce_SB && (g_SStime<timeShift) && (gearShiftOne >= 30.0) ) /* Shift Begin (SB) -30 rpm under */
 						{
 							//iOnce_SB = FALSE;
@@ -1525,14 +1560,14 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 					iSortcount ++;
 
 						 if( MODE_NOR == aiPATs05 ) isNor = 1; /* 8: (md_NOR) */
-					else if( MODE_ECO == aiPATs05 ) isECO = 1;	/* 9: (md_ECO) */
-					else if( MODE_SPT == aiPATs05 ) isSPT = 1;	/* 25 : (md_SPT) */
+					else if( MODE_ECO == aiPATs05 ) isECO = 1; /* 9: (md_ECO) */
+					else if( MODE_SPT == aiPATs05 ) isSPT = 1; /* 25 : (md_SPT) */
 
 				#if SAVEMODE
 					if(shiFile)
 					{
 					fprintf(shiFile, SAVEFMT,
-							timeShift, iPATs05, arrPATs_ModeID[iPATs05].ModeID, tqi, curGear08, Aps09, sNo10, tgtGear11, 
+							timeShift, iPATs05, arrPATs_ModeID[aiPATs05].ModeID, tqi, curGear08, Aps09, sNo10, tgtGear11, 
 							iShift, iShiType12, arrGear[iShiType12].sGear, TqFr, ShiftPh, sNe, sNt16, LAccel, gearRatio, gearShiftOne );
 					}
 				#endif
@@ -1572,16 +1607,19 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 					{
 						//idxAPS++;
 						iOnce_SF = FALSE;
-						printf( SAVEFMT2 " ->SFtime(t3) \n", 
+						if(outfile)
+						fprintf(outfile, SAVEFMT2 " ->SFtime(t3) \n", 
 								timeShift, iPATs05, arrPATs_ModeID[iPATs05].ModeID, iShiType12, arrGear[iShiType12].sGear, Aps09, (g_SFtime-g_FFtime), "t3", LAccel, sNt16, sNe );
 					}
 					else if( iOnce_FF && (g_FFtime > 0.0f) ) /*  */
 					{
 						iOnce_FF = FALSE;
-						printf( SAVEFMT2 " ->FFtime(t2) \n\n", 
+						if(outfile)
+						fprintf(outfile, SAVEFMT2 " ->FFtime(t2) \n\n", 
 								timeShift, iPATs05, arrPATs_ModeID[iPATs05].ModeID, iShiType12, arrGear[iShiType12].sGear, Aps09, (g_FFtime-g_SBtime), "t2", LAccel, sNt16, sNe );
 
 						idxAPS++; /* APS Next Table */
+
 
 						g_S0time = -1.0f;
 						g_SStime = -1.0f;
@@ -1599,7 +1637,8 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 					else if( iOnce_SB && (g_SBtime > 0.0f) ) /*   */
 					{
 						iOnce_SB = FALSE;
-						printf( SAVEFMT2 " ->SBtime(t1) \n", 
+						if(outfile)
+						fprintf(outfile, SAVEFMT2 " ->SBtime(t1) \n", 
 								timeShift, iPATs05, arrPATs_ModeID[iPATs05].ModeID, iShiType12, arrGear[iShiType12].sGear, Aps09, (g_SBtime-g_SStime), "t1", LAccel, sNt16, sNe );
 					}
 					else if( iOnce_SS && (g_SStime > 0.0f) )
@@ -1607,7 +1646,8 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 						/* POWER_ON (aps>= 3~5%) or POWER_OFF (aps< 3~5%) */
 						//iPwrOn_Once = 0;
 						iOnce_SS = FALSE;
-						printf( SAVEFMT2 " ->SStime(--) \n", 
+						if(outfile)
+						fprintf(outfile, SAVEFMT2 " ->SStime(--) \n", 
 								timeShift, iPATs05, arrPATs_ModeID[iPATs05].ModeID, iShiType12, arrGear[iShiType12].sGear, Aps09, (g_SStime - g_S0time), "--", LAccel, sNt16, sNe  );
 					}
 
@@ -1655,13 +1695,31 @@ int ShiftQualData(int SkipLine, int aiPATs05, int shiftDir, int iPwrOnOff, int d
 	if(shiFile) { fclose(shiFile); shiFile=NULL; }
 	
 
-	fprintf(stderr,">>Total Records -------: %lu lines \n", RecordCnt );
-	fprintf(stderr,"    Quality Records ---: %lu lines \n", iOKcount );
-	fprintf(stderr,"    Error Records -----: %lu lines \n", iNGcount );
-	fprintf(stderr,"    Sorted Records ----: %lu /by %s \n", iSortcount, arrPATs_ModeID[aiPATs05].ModeID );
-	if(SkipLine)
-	fprintf(stderr,"    Skip by %d Records... \n", SkipLine );
+	fprintf(stderr,">>Total Records ----------: %lu lines \n", RecordCnt );
+	fprintf(stderr,"    Quality Records ------: %lu lines \n", iOKcount );
+	fprintf(stderr,"    Error Records --------: %lu lines \n", iNGcount );
+	fprintf(stderr,"    Sorted Records -------: %lu /by %s \n", iSortcount, arrPATs_ModeID[aiPATs05].ModeID );
+	if(SkipLine01)
+	fprintf(stderr,"    Skip by %d Records... \n", SkipLine01 );
 	fprintf(stderr,"\r\n");
+
+
+	fprintf(stderr,">>ModeID Summary Records ----------------- \n" );
+
+	totChkModeID = 0;
+	for(ii=0; ii<MODE_ID_NUMS-1 ;ii++)
+	{
+		if( chkPATs_ModeID[ii] > 0 )
+		{
+			fprintf(stderr,"    %3d:%-17s : %d lines \n", ii, arrPATs_ModeID[ii].ModeID, chkPATs_ModeID[ii] );
+			totChkModeID += chkPATs_ModeID[ii];
+		}
+	}
+	fprintf(stderr,">>Summary Records --------: %d lines \n", totChkModeID );
+	fprintf(stderr,"------------------------------------------\n\n", totChkModeID );
+
+//printf("Mode ID %d => %d \n", iPATs05, chkPATs_ModeID[iPATs05] );
+
 
 }
 #endif // SHIFT_QUALITY_DATA_SORTING /* 2022-11-13 */
@@ -1901,10 +1959,10 @@ int main(int argc, char *argv[])
 
 #if SHIFT_QUALITY_DATA_SORTING /* 2022-11-13 */
 	char str_ShiftOp[10][32+1]; 
-	int iShiftOp = 0;
-	int isShift=0;
+	int iSkipLn = 0;
+	int isShift = 0;
 	int isUpShift=0, isDownShift=0;	
-
+	int iModeID = 0;
 
 	int iEidx=0, iTCnt=0;
 #endif //SHIFT_QUALITY_DATA_SORTING /* 2022-11-13 */
@@ -1938,8 +1996,8 @@ int main(int argc, char *argv[])
 	//	{"reverse",		required_argument, 0, 'r'}, 
 	//	{"size",		required_argument, 0, 's'}, // 2nd file size
 	//	{"title",		required_argument, 0, 't'},
-	//	{"file",		required_argument, 0, 'u'},
-		{"version", 	required_argument, 0, 'v'}, /// Attach Header : Version Name (16byte)
+	//	{"up",			required_argument, 0, 'u'}, 
+ 		{"version", 	required_argument, 0, 'v'}, /// Attach Header : Version Name (16byte)
 	//	{"file",		required_argument, 0, 'w'},
 		{"extract",		required_argument, 0, 'x'},
 		{"merge",		required_argument, 0, 'y'}, /// file merged
@@ -1996,7 +2054,7 @@ int main(int argc, char *argv[])
 	memset(outfile_name, 0x00, (MAX_CHARS*LENGTH_OF_FILENAME)+1 );
 
 #if SHIFT_QUALITY_DATA_SORTING /* 2022-11-13 */
-	memset( shift_outfile, 0x00, (MAX_CHARS*LENGTH_OF_FILENAME)+1 ); // 2022.11.19
+	memset( shift_file, 0x00, (MAX_CHARS*LENGTH_OF_FILENAME)+1 ); // 2022.11.19
 #endif
 
 	memset(str_boardName,   0x00, (MAX_CHARS+1) );
@@ -4171,7 +4229,7 @@ int main(int argc, char *argv[])
 						printf("\n>>Input file   : %s (%.3f kB)", infile_name, (iFiles.size/1024.0) );
 					else 
 				#endif
-						printf("\n>>Input file      : %s (%lu Bytes)", infile_name, iFiles.size );
+						printf("\n>>Input file      : %s (%lu Bytes, %.2lfMB)", infile_name, iFiles.size, (iFiles.size/1024.0)/1024.0 );
 
 
 				#if 1 // 2017.04.05, 2nd file information
@@ -4226,7 +4284,7 @@ int main(int argc, char *argv[])
 				{
 					memcpy(outfile_name, optarg, MAX_CHARS*LENGTH_OF_FILENAME);
 			#if SHIFT_QUALITY_DATA_SORTING /* 2022-11-13 */
-					memcpy(shift_outfile, optarg, MAX_CHARS*LENGTH_OF_FILENAME );
+					memcpy(shift_file, optarg, MAX_CHARS*LENGTH_OF_FILENAME );
 			#endif
 					olen = strlen(outfile_name);
 
@@ -4309,6 +4367,11 @@ int main(int argc, char *argv[])
 					//printf("\n");
 					//printf("--1-- optind=%d, argv=%d\n", optind, argc);
 
+					isShift 	 = 1;
+					isUpShift	 = 1;
+					isDownShift  = 0;
+					iModeID      = 0;
+
 					memset(str_ShiftOp, 0x00, sizeof(str_ShiftOp) );
 
 					iTCnt = 0;
@@ -4332,37 +4395,40 @@ int main(int argc, char *argv[])
 						case 0: // SKIP Lines
 							// 0>> SKIP Value
 							olen = strlen(str_ShiftOp[kk]);
-							iShiftOp = str2int(str_ShiftOp[kk]);
+							iSkipLn = str2int(str_ShiftOp[kk]);
 
-							printf("\n");
-							if(iShiftOp) 
-								printf(">>up shift record : skip by %d ", iShiftOp ); 
+							fprintf(stderr,"\n");
+							if(iSkipLn) 
+								fprintf(stderr,">>upshift record  : skip by %d ", iSkipLn ); 
 							else 
-								printf(">>up shift record : all "); 
+								fprintf(stderr,">>upshift record  : all used."); 
 							break;
 
 						case 1: /* Power On/Off  APS Level */
 							// 1>> APS POWER ON/OFF Level
 							fAPSpwrLvl = atof( str_ShiftOp[kk] ); 
-							printf("\n");
-							printf(">>APS Percent Lvl : %.2lf%% -- default(3\%~5\%)", fAPSpwrLvl ); 
+							fprintf(stderr,"\n");
+							fprintf(stderr,">>APS Percent Lvl : %.2lf%% -- default(3\%~5\%)", fAPSpwrLvl ); 
 							break;
 
+						case 2:
+							
+						case 3:
+						case 4:
+
 						default:
-							printf("\n");
-							printf(">>upshift options : <<%d>> (%s) ", kk, str_ShiftOp[kk] ); 
+							fprintf(stderr,"\n");
+							fprintf(stderr,">>upshift options : <<%d>> (%s) ", kk, str_ShiftOp[kk] ); 
 							break;
 						}
 
 					}
 					
-					isShift 	 = 1;
-					isUpShift	 = 1;
-					isDownShift  = 0;
+
 				}
 				else
 				{
-					printf("\n\n[++ERROR++] up shift option error. \r\n" );
+					fprintf(stderr,"\n\n[++ERROR++] up shift option error. \r\n" );
 
 					beep(700,100);
 					AllFilesClosed();
@@ -8414,7 +8480,9 @@ int main(int argc, char *argv[])
 	{
 		
 		printf("\r\n");
-		printf("UP - Shift Quality Data Sorting \r\n");
+		fprintf(stderr,"----------------------------------------------------\n" );
+		fprintf(stderr,"Shift Quality Data Sorting --> UP Shift...   \n");
+		fprintf(stderr,"----------------------------------------------------\n" );
 //		printf("APS(%)	 Time(sec)	 G	  rmp \r\n");
 //		printf("		  t1		t2	   SS	 SB   SF	Nt_SB	 Ne_SB \r\n");
 
@@ -8424,32 +8492,38 @@ int main(int argc, char *argv[])
 			printf("time OTS vsp TqStnd ModeID	EngTemp  tqi   curGear	Aps  No  tgtGear  shiftType ---  TqFr  ShiftPh	 Ne  Nt  LAccel \r\n");
 		}
 		#endif
-		/* =========================================================== */
 
-
-		ShiftQualData(iShiftOp, MODE_NOR, SHIFT_SEQ_UP, PWR_ON, -1, -1, -1, -1);
+		ShiftQualData(iSkipLn, MODE_NOR, SHIFT_UP, PWR_ON, -1, -1, -1, -1);
 	    rewind(inpfile);
 
-#if 1
-		ShiftQualData(iShiftOp, MODE_ECO, SHIFT_SEQ_UP, PWR_ON, -1, -1, -1, -1);
+		ShiftQualData(iSkipLn, MODE_ECO, SHIFT_UP, PWR_ON, -1, -1, -1, -1);
 	    rewind(inpfile);
 			
-		ShiftQualData(iShiftOp, MODE_SPT, SHIFT_SEQ_UP, PWR_ON, -1, -1, -1, -1);
+		ShiftQualData(iSkipLn, MODE_SPT, SHIFT_UP, PWR_ON, -1, -1, -1, -1);
 		rewind(inpfile);
-#endif
 
-		printf("\r\n");
-		printf("Shift Quality Data Sorting Ended... \r\n");
+
+		fprintf(stderr,"----------------------------------------------------\n" );
+		fprintf(stderr,"Shift Quality Data Sort Completed by WAY.  \n");
+		fprintf(stderr,"----------------------------------------------------\n" );
 
 
 	}
 	else if( (1==isDownShift) && (1==isShift) )
 	{
 		printf("\r\n");
-		printf("DOWN - Shift Quality Data Sorting \r\n");
+		fprintf(stderr,"----------------------------------------------------\n" );
+		fprintf(stderr,"Shift Quality Data Sorting --> DOWN Shift...   \n");
+		fprintf(stderr,"----------------------------------------------------\n" );
 
 
 
+
+
+
+		fprintf(stderr,"----------------------------------------------------\n" );
+		fprintf(stderr,"Shift Quality Data Sort Completed by WAY.  \n");
+		fprintf(stderr,"----------------------------------------------------\n" );		
 	}
 #endif
 	
