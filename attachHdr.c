@@ -774,7 +774,7 @@ void AllFilesClosed(void)
 #define TYPE_MIN_NT 	13
 #define TYPE_MIN_NE 	14
 #define TYPE_MAX_G 		22
-#define TYPE_MIN_G 		23
+#define TYPE_Min_G 		23
 
 
 #define LEN_POS 		10
@@ -1560,7 +1560,7 @@ int ShiftQualData(short aiPATs05, int shiDir03, int iPwrOnOff04, unsigned int *S
 		return 0;
 	}
 
-	if( -1.0 == fAPSpwrLvl ) 
+	if( fAPSpwrLvl < 0.0f ) 
 	{
 		fAPSpwrLvl = 3.0f; /* default value setting */
 		fprintf(stderr,">>APS default lvl : %.2lf%% -- default(3\%~5\%) \n", fAPSpwrLvl );
@@ -1570,16 +1570,15 @@ int ShiftQualData(short aiPATs05, int shiDir03, int iPwrOnOff04, unsigned int *S
 	ivsKPHNum = vsKPHTableIndex();
 		
 
-	/* ==================================================================== */
+	/* ===================================================================================== */
 	/* get file  */
 	//fprintf(stderr,"\n");
 	fprintf(stderr,">>ModeID %s Sorting... \n", arrPATs_ModeID[aiPATs05].ModeID );			
 	fprintf(stderr,">>shift Direction (%s)... \n", (shiDir03==SHIFT_UP?"Up":(shiDir03==SHIFT_DN?"Down": \
 		(shiDir03==SHIFT_SKIP_DN?"SkipDown":(shiDir03==SHIFT_SKIP_UP?"SkipUp":"Unknown"))) ));			
 
-
-
 	/* ===================================================================================== */
+
 	memset(shift_out, 0x00, sizeof(shift_out)); // 2022.11.22
 	strcpy(shift_out, shift_file);
 	if( (aiPATs05>=0 && aiPATs05<MODE_ID_NUMS-1) && (strlen(shift_out)>0) )
@@ -1590,7 +1589,6 @@ int ShiftQualData(short aiPATs05, int shiDir03, int iPwrOnOff04, unsigned int *S
 			if( shift_out[ii]=='.' ) 
 			{
 				shift_out[ii+1] = '\0';
-				//strcat(shift_out, "1"); /* 1st create file name ".1ECO"*/
 				strcat(shift_out, arrPATs_ModeID[aiPATs05].ModeNm);
 				isNaming = 1;
 				break;
@@ -1599,7 +1597,6 @@ int ShiftQualData(short aiPATs05, int shiDir03, int iPwrOnOff04, unsigned int *S
 
 		if( 0==isNaming )
 		{
-			//strcat(shift_out, ".1"); /* 1st create file name ".1ECO"*/
 			strcat(shift_out, arrPATs_ModeID[aiPATs05].ModeNm);
 		}
 
@@ -1667,13 +1664,13 @@ int ShiftQualData(short aiPATs05, int shiDir03, int iPwrOnOff04, unsigned int *S
 			else if( (QUAL_DATA_ITEM_NUM!=result) && (result!=-1 && i>0) ) 
 			{
 				iNGcount ++;
-				continue; // reading Next item because of FAIL item
+				continue; /* reading Next item because of FAIL item */
 			}
 			else
 			{
 				iNGcount ++;
-				printf(" ++ERROR++ result = %d, NGcount = %lu\n", result, iNGcount );
-				continue; // reading Next item because of FAIL item
+				fprintf(stderr,"\n[%s]: ++ERROR++ result = %d, NGcount = %lu\n",__FUNCTION__, result, iNGcount );
+				continue; /* reading Next item because of FAIL item */
 			}
 			/* === 1 STEP : record (17 items check) =============== */
 
@@ -1740,23 +1737,23 @@ int ShiftQualData(short aiPATs05, int shiDir03, int iPwrOnOff04, unsigned int *S
 
 			if( iPwrOnOff04 == PWR_ON )
 			{
-				if( sq[0].APS09 < fAPSpwrLvl ) continue;
+				if( sq[0].APS09 < fAPSpwrLvl ) continue; /* APS power level check and ignored */
 			}
 
 
 			if( (SHIFT_UP==shiDir03) && (sq[0].curGear08 != sq[0].tgtGear11) && (sq[0].curGear08+1 == sq[0].tgtGear11+0) )
 			{
-				if( 0 == sq[0].curGear08 ) continue;
+				if( 0 == sq[0].curGear08 ) continue; /* 0-DAN ignored */
 				/* -- else OK -- */
 			}
 			else if( (SHIFT_DN==shiDir03) && (sq[0].curGear08 != sq[0].tgtGear11) && (sq[0].curGear08+0 == sq[0].tgtGear11+1) )
 			{
-				if( 0 == sq[0].tgtGear11 ) continue;
+				if( 0 == sq[0].tgtGear11 ) continue; /* 0-DAN ignored */
 				/* -- else OK -- */
 			}
 			else if( (SHIFT_SKIP_DN==shiDir03) && (sq[0].curGear08 != sq[0].tgtGear11) && (sq[0].curGear08+2 >= sq[0].tgtGear11) )
 			{
-				if( 0 == sq[0].tgtGear11 ) continue;
+				if( 0 == sq[0].tgtGear11 ) continue; /* 0-DAN ignored */
 				/* -- else OK -- */
 			}
 			else 
@@ -2169,8 +2166,9 @@ int SSCounterCheck(short aiPATs05, unsigned int SScnt, unsigned int SBcnt, unsig
 
 				if( NULL == fgets( QualData, QUAL_DATA_MAX_SIZE, inpfile ) )
 				{
-					fprintf(stderr,">>Check completed %s -- %d \r\n", arrPATs_ModeID[aiPATs05].ModeID, ierr );			
-					rewind(inpfile);
+					fprintf(stderr,">>Check completed %s -- [%s] \r\n", arrPATs_ModeID[aiPATs05].ModeID, shi_inp );			
+
+					rewind(inpfile); /* File point rewind ~~~~ */
 					break;
 				}
 
@@ -2231,11 +2229,11 @@ int SSCounterCheck(short aiPATs05, unsigned int SScnt, unsigned int SBcnt, unsig
 
 			}
 			while (!feof (inpfile));
+			fprintf(stderr,"----------------------------------------------\n");
 
 		}
 
 		//fclose(fp2chk);
-
 		// ---------------------------------------------------------
 
 		rewind(inpfile);
@@ -2301,7 +2299,7 @@ int SSCounterCheck(short aiPATs05, unsigned int SScnt, unsigned int SBcnt, unsig
 				if( NULL == fgets( QualData, QUAL_DATA_MAX_SIZE, inpfile ) )
 				{
 					ierr = ferror(inpfile);
-					fprintf(stderr,">>Check completed %s -- %d \r\n", arrPATs_ModeID[aiPATs05].ModeID, ierr );			
+					fprintf(stderr,">>Duplicate record check completed %s -- [%s] \r\n", arrPATs_ModeID[aiPATs05].ModeID, shi_inp );			
 					fclose(inpfile);
 					break;
 				}
@@ -2379,8 +2377,6 @@ int SSCounterCheck(short aiPATs05, unsigned int SScnt, unsigned int SBcnt, unsig
 			while (!feof (inpfile));
 
 		}
-
-
 
 	}
 
@@ -2658,7 +2654,7 @@ int Find2nd_minMaxShiftData(short aiPATs05, int chk, unsigned int SScnt, unsigne
 			
 			if(i >= QUAL_DATA_MAX_SIZE)
 			{
-				fprintf(stderr,"ERROR:%6d: Not enough Buffer length (%d) \r\n", RecordCnt, i );
+				fprintf(stderr,"\n[%s]: ++ERROR++:%6d: Not enough Buffer length (%d) \r\n", __FUNCTION__, RecordCnt, i );
 			}
 
 			if (--i > 0)
@@ -3378,7 +3374,7 @@ int ShiftData_MAXLocationCheck(char *infile, char *shi_inp, char *shi_out, char 
 						else
 						{
 							if( 0==strcmp(sq2[0].sTimePos, TXT_MaxNt) )
-								strcpy( sq2[0].sTimePos, TXT_MXNtNe);								
+								strcpy( sq2[0].sTimePos, TXT_MXNtNe);
 							else if( 0==strcmp(sq2[0].sTimePos, TXT_gMAX) )
 								strcpy( sq2[0].sTimePos, TXT_MXNegX);
 							else if( 0==strcmp(sq2[0].sTimePos, TXT_gmin) )
@@ -3394,9 +3390,7 @@ int ShiftData_MAXLocationCheck(char *infile, char *shi_inp, char *shi_out, char 
 				case TYPE_MAX_G:
 					if( isSSpoint && (int)((sq2[0].LAcc17)*10000) == (int)(mValue[iSScount]*10000) )
 					{
-						if( 0==strcmp(sq2[0].sTimePos, TXT_MaxNt) || 
-							0==strcmp(sq2[0].sTimePos, TXT_MaxNe) || 
-							0==strcmp(sq2[0].sTimePos, TXT_gmin) || 
+						if( 0==strcmp(sq2[0].sTimePos, TXT_gmin) || 
 							0==strcmp(sq2[0].sTimePos, TXT_SSTIME) || 
 							0==strcmp(sq2[0].sTimePos, TXT_SBTIME) || 
 							0==strcmp(sq2[0].sTimePos, TXT_SPTIME)  )
@@ -3406,18 +3400,22 @@ int ShiftData_MAXLocationCheck(char *infile, char *shi_inp, char *shi_out, char 
 						}
 						else
 						{		
-							strcpy( sq2[0].sTimePos, maxType);
+							if( 0==strcmp(sq2[0].sTimePos, TXT_MaxNt) )
+								strcpy( sq2[0].sTimePos, TXT_MXNtgX);
+							else if( 0==strcmp(sq2[0].sTimePos, TXT_MaxNe) )
+								strcpy( sq2[0].sTimePos, TXT_MXNegX);
+							else							
+								strcpy( sq2[0].sTimePos, maxType);
+
 							isSSpoint = 0;
 						}
 					}
 					break;
 
-				case TYPE_MIN_G: /* g_min은 SB point 이후 ~~*/
+				case TYPE_Min_G: /* g_min은 SB point 이후 ~~*/
 					if( /*isSBpoint && */ isSSpoint && (int)((sq2[0].LAcc17)*10000) == (int)(mValue[iSScount]*10000) )
 					{
-						if( 0==strcmp(sq2[0].sTimePos, TXT_MaxNt) || 
-							0==strcmp(sq2[0].sTimePos, TXT_MaxNe) || 
-							0==strcmp(sq2[0].sTimePos, TXT_gMAX) || 
+						if( 0==strcmp(sq2[0].sTimePos, TXT_gMAX) || 
 							0==strcmp(sq2[0].sTimePos, TXT_SSTIME) || 
 							0==strcmp(sq2[0].sTimePos, TXT_SBTIME) || 
 							0==strcmp(sq2[0].sTimePos, TXT_SPTIME)  )
@@ -3428,7 +3426,14 @@ int ShiftData_MAXLocationCheck(char *infile, char *shi_inp, char *shi_out, char 
 						}
 						else
 						{
-							strcpy( sq2[0].sTimePos, maxType);
+
+							if( 0==strcmp(sq2[0].sTimePos, TXT_MaxNt) )
+								strcpy( sq2[0].sTimePos, TXT_MXNtgm);
+							else if( 0==strcmp(sq2[0].sTimePos, TXT_MaxNe) )
+								strcpy( sq2[0].sTimePos, TXT_MXNegm);
+							else							
+								strcpy( sq2[0].sTimePos, maxType);
+
 							isSSpoint = 0;
 							isSBpoint = 0;
 						}
@@ -3673,7 +3678,10 @@ int ShiftData_LastSorting(char *shi_inp, short aiPATs05)
 				is2File = 1;
 				gTimeDiff = (sq3[0].Time01 - gSStime);
 
+
+				// ------------------------------------
 				// -- g Max time
+				// ------------------------------------
 				if( 0==strcmp( sq3[0].sTimePos, TXT_gMAX) )
 				{
 					gMaxTime = sq3[0].Time01;
@@ -3690,21 +3698,23 @@ int ShiftData_LastSorting(char *shi_inp, short aiPATs05)
 					gMaxVal = sq3[0].LAcc17;
 				}			
 
+				// ------------------------------------
 				// -- g min time
+				// ------------------------------------
 				if( 0==strcmp( sq3[0].sTimePos, TXT_gmin) )
 				{
 					gminTime = sq3[0].Time01;
-					gminVal = sq3[0].LAcc17;
+					gminVal  = sq3[0].LAcc17;
 				}
 				else if( 0==strcmp( sq3[0].sTimePos, TXT_MXNtgm) )
 				{
 					gminTime = sq3[0].Time01;
-					gminVal = sq3[0].LAcc17;
+					gminVal  = sq3[0].LAcc17;
 				}
 				else if( 0==strcmp( sq3[0].sTimePos, TXT_MXNegm) )
 				{
 					gminTime = sq3[0].Time01;
-					gminVal = sq3[0].LAcc17;
+					gminVal  = sq3[0].LAcc17;
 				}
 
 				if( (gMaxTime > 0.0f) && (gminTime > 0.0f) )
@@ -10713,7 +10723,7 @@ int main(int argc, char *argv[])
 		strcat(infile,  arrPATs_ModeID[iModeID].ModeNm);
 		strcat(shi_out, arrPATs_ModeID[iModeID].FileNm);	
 
-		ShiftData_MAXLocationCheck(infile, shi_inp, shi_out, TXT_gmin, TYPE_MIN_G, iModeID, SScnt, SBcnt, SPcnt);
+		ShiftData_MAXLocationCheck(infile, shi_inp, shi_out, TXT_gmin, TYPE_Min_G, iModeID, SScnt, SBcnt, SPcnt);
 		// g_min --------------------------------------------------
 #if 1
 		if(iFileDeleted)
@@ -10731,18 +10741,50 @@ int main(int argc, char *argv[])
 
 		ShiftData_LastSorting(shi_out, iModeID);
 
-		
-		// ShiftData3rdSorting(iModeID);
 
+	#if 1
+		if(iFileDeleted)
+		{
+			// -------------------------------------------------------------
+			if(ichk)
+			{
+				strcpy(shi_out, shi_ori);
+				strcat(shi_out,	"c");
+				strcat(shi_out, arrPATs_ModeID[iModeID].ModeNm);
 
-	#if 0
+				ii = remove( shi_out );
+				if( 0 == ii )
+					fprintf(stderr,"  Deleted temp file [%s] -> OK \n", shi_out );
+				else
+					fprintf(stderr,"  Deleted temp file [%s] -> Failed(%d) \n", shi_out, ii );
+			}
+			else
+			{
+				strcpy(shi_out, shi_ori);
+				strcat(shi_out,	"z");
+				strcat(shi_out, arrPATs_ModeID[iModeID].ModeNm);
 
-		ShiftQualData(iModeID, iSkipLn, -1, SHIFT_UP, PWR_ON, -1, -1, -1, -1);
-	    rewind(inpfile);
-			
-		ShiftQualData(iModeID, iSkipLn, -1, SHIFT_UP, PWR_ON, -1, -1, -1, -1);
-		rewind(inpfile);
+				ii = remove( shi_out );
+				if( 0 == ii )
+					fprintf(stderr,"  Deleted temp file [%s] -> OK \n", shi_out );
+				else
+					fprintf(stderr,"  Deleted temp file [%s] -> Failed(%d) \n", shi_out, ii );
+			}
+
+			// -------------------------------------------------------------
+			strcpy(shi_out, shi_ori);
+			strcat(shi_out, arrPATs_ModeID[iModeID].ModeNm);
+
+			ii = remove( shi_out );
+			if( 0 == ii )
+				fprintf(stderr,"  Deleted temp file [%s] -> OK \n", shi_out );
+			else
+				fprintf(stderr,"  Deleted temp file [%s] -> Failed(%d) \n", shi_out, ii );
+
+			fprintf(stderr,"---------------------------------------------------------------\n" );
+		}
 	#endif
+
 
 	}
 	else if( (1==isDownShift) && (1==isShift) )
